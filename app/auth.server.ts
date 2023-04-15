@@ -27,7 +27,7 @@ const discordStrategy = new DiscordStrategy(
     callbackURL:
       process.env.NODE_ENV === "development"
         ? "http://localhost:3000/auth/discord/callback"
-        : "https://yourdomain.com/auth/discord/callback",
+        : "https://hear-hear-webapp.vercel.app/auth/discord/callback",
     // Provide all the scopes you want as an array
     scope: ["identify", "email", "guilds"],
   },

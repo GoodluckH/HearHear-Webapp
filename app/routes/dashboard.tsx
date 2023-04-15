@@ -37,12 +37,12 @@ export let loader: LoaderFunction = async ({ request }) => {
       ),
     }))
   );
+
   return { user, guilds };
 };
 
 export default function DashboardLayout() {
   const { user, guilds } = useLoaderData<DashboardProps>();
-
   return (
     <div className="flex h-screen bg-gray-100">
       <nav className="w-64 bg-white border-r border-gray-200">

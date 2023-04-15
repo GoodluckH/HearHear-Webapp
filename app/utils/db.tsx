@@ -5,10 +5,12 @@ import {
 } from "@aws-sdk/client-s3";
 
 import { config } from "dotenv";
+import { getChannelNameById } from "./discord";
 config();
 
 const S3_BUCKET_REGION = process.env.S3_BUCKET_REGION;
 const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME;
+const S3_PUBLIC_URL = `https://${S3_BUCKET_NAME}.s3.${S3_BUCKET_REGION}.amazonaws.com/`;
 
 const client = new S3Client({
   region: S3_BUCKET_REGION!,
@@ -17,7 +19,7 @@ const client = new S3Client({
 export interface Meeting {
   id: string; // the meeting id; which is also a unix timestamp
   guildId: string; // the guild id
-  channelId: string; // the channel id
+  channelName: string; // the channel id
   recordings: string[]; // the recording paths
 }
 
@@ -31,18 +33,28 @@ export async function getRecordingFileAsBase64(filePath: string) {
   return Body;
 }
 
-export function buildMeetings(files: string[]): Meeting[] {
-  const meetings: Meeting[] = [];
-  files.forEach((file) => {
-    const [guildId, channelId, meetingId] = file.split("/");
-    meetings.push({
-      id: meetingId,
-      guildId,
-      channelId,
-      recordings: [],
-    });
-  });
-  return meetings;
+export async function buildMeetings(files: string[]) {
+  const meetings: Record<string, Meeting> = {};
+
+  await Promise.all(
+    files.map(async (file) => {
+      const [guildId, channelId, meetingId] = file.split("/");
+      const channelName = await getChannelNameById(channelId);
+      const meeting = meetings[meetingId];
+      if (meeting) {
+        meeting.recordings.push(`${S3_PUBLIC_URL}${file}`);
+      } else {
+        meetings[meetingId] = {
+          id: meetingId,
+          guildId,
+          channelName,
+          recordings: [`${S3_PUBLIC_URL}${file}`],
+        };
+      }
+    })
+  );
+
+  return Object.values(meetings);
 }
 
 export async function getRecordingPathAsStrings(
@@ -55,8 +67,6 @@ export async function getRecordingPathAsStrings(
 
   try {
     let isTruncated = true;
-
-    console.log("Your bucket contains the following objects:\n");
     let contents: string[] = [];
 
     while (isTruncated) {
@@ -80,5 +90,5 @@ export async function getRecordingPathAsStrings(
 
 export async function getMeetings(guildId: string) {
   const files = await getRecordingPathAsStrings(guildId);
-  return buildMeetings(files);
+  return await buildMeetings(files);
 }

@@ -23,10 +23,7 @@ export function getChannelName(
   return channel.name || "Unknown Channel";
 }
 
-getChannelObject("379054558594203648")
-  .then((channel) => {
-    console.log(getChannelName(channel!));
-  })
-  .catch((error) => {
-    console.log(error);
-  });
+export async function getChannelNameById(channelId: string) {
+  const channel = await getChannelObject(channelId);
+  return getChannelName(channel);
+}

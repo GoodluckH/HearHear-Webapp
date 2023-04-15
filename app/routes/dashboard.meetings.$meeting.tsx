@@ -83,18 +83,24 @@ const Collapsible: FC<MeetingProp> = ({ meeting }) => {
 
       {!isCollapsed && (
         <div className="mt-5">
-          {meeting.recordings.map((recording: string) => (
-            <div key={recording}>
-              <h2 className="text-xl font-semibold mb-0">
-                {recording.split("/").pop()?.split("-")[1].split("_")[0]} -{" "}
-                {convertUNIXToString(
-                  recording.split("/").pop()?.split("-")[0]!,
-                  "%I:%M:%S %p"
-                )}
-              </h2>
-              <audio className="w-full" controls src={recording}></audio>
-            </div>
-          ))}
+          {meeting.recordings
+            .sort(
+              (a, b) =>
+                Number(a.split("/").pop()?.split("-")[0]) -
+                Number(b.split("/").pop()?.split("-")[0])
+            )
+            .map((recording: string) => (
+              <div key={recording}>
+                <h2 className="text-xl font-semibold mb-0">
+                  {recording.split("/").pop()?.split("-")[1].split("_")[0]} -{" "}
+                  {convertUNIXToString(
+                    recording.split("/").pop()?.split("-")[0]!,
+                    "%I:%M:%S %p"
+                  )}
+                </h2>
+                <audio className="w-full" controls src={recording}></audio>
+              </div>
+            ))}
         </div>
       )}
     </div>

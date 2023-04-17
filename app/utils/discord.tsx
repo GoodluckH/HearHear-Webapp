@@ -11,6 +11,8 @@ export async function getChannelObject(channelId: string) {
       },
     }
   );
+  console.log(response);
+
   if (response.status !== 200) {
     throw new Error("Channel not found");
   }

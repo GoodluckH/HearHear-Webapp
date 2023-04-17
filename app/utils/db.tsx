@@ -35,12 +35,26 @@ export async function getRecordingFileAsBase64(filePath: string) {
 
 export async function buildMeetings(files: string[]) {
   const meetings: Record<string, Meeting> = {};
+  const channelNameCache: Record<string, string> = {};
+  files.map((file) => {
+    const [, channelId] = file.split("/");
+    channelNameCache[channelId] = "";
+    return null;
+  });
+
+  await Promise.all(
+    Object.keys(channelNameCache).map(async (channelId) => {
+      const channelName = await getChannelNameById(channelId);
+      channelNameCache[channelId] = channelName;
+    })
+  );
 
   await Promise.all(
     files.map(async (file) => {
       const [guildId, channelId, meetingId] = file.split("/");
-      const channelName = await getChannelNameById(channelId);
+      let channelName = channelNameCache[channelId];
       const meeting = meetings[meetingId];
+
       if (meeting) {
         meeting.recordings.push(`${S3_PUBLIC_URL}${file}`);
       } else {

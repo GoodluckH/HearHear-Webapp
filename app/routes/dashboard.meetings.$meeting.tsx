@@ -98,7 +98,12 @@ const Collapsible: FC<MeetingProp> = ({ meeting }) => {
                     "%I:%M:%S %p"
                   )}
                 </h2>
-                <audio className="w-full" controls src={recording}></audio>
+                <audio
+                  className="w-full"
+                  preload="none"
+                  controls
+                  src={recording}
+                ></audio>
               </div>
             ))}
         </div>

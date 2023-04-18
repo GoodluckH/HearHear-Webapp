@@ -11,7 +11,6 @@ export async function getChannelObject(channelId: string) {
       },
     }
   );
-  console.log(response);
 
   if (response.status !== 200) {
     throw new Error("Channel not found");
@@ -26,6 +25,10 @@ export function getChannelName(
 }
 
 export async function getChannelNameById(channelId: string) {
-  const channel = await getChannelObject(channelId);
-  return getChannelName(channel);
+  try {
+    const channel = await getChannelObject(channelId);
+    return getChannelName(channel);
+  } catch (error) {
+    return "Unknown Channel";
+  }
 }

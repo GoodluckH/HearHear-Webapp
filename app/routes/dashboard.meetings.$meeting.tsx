@@ -1,7 +1,7 @@
 import { useRouteData, useRouteParam } from "~/utils/data";
 import type { DashboardProps } from "./dashboard";
 import type { LoaderFunction } from "@remix-run/node";
-import type { Meeting } from "~/utils/db";
+import type { Meeting, Transcript } from "~/utils/db";
 import { getMeetings } from "~/utils/db";
 import { useLoaderData } from "@remix-run/react";
 import type { FC } from "react";
@@ -83,27 +83,29 @@ const Collapsible: FC<MeetingProp> = ({ meeting }) => {
 
       {!isCollapsed && (
         <div className="mt-5">
-          {meeting.recordings
+          {meeting.transcripts
             .sort(
               (a, b) =>
-                Number(a.split("/").pop()?.split("-")[0]) -
-                Number(b.split("/").pop()?.split("-")[0])
+                Number(a.filename.split("-")[0]) -
+                Number(b.filename.split("-")[0])
             )
-            .map((recording: string) => (
-              <div key={recording}>
+            .map((transcript: Transcript, id) => (
+              <div key={id}>
+                {/* <audio
+                  className="mr-4"
+                  preload="none"
+                  controls
+                  src={transcript.audio_link}
+                ></audio> */}
+
                 <h2 className="text-xl font-semibold mb-0">
-                  {recording.split("/").pop()?.split("-")[1].split("_")[0]} -{" "}
+                  {transcript.filename.split("-")[1].split("_")[0]} -{" "}
                   {convertUNIXToString(
-                    recording.split("/").pop()?.split("-")[0]!,
+                    transcript.filename.split("-")[0]!,
                     "%I:%M:%S %p"
                   )}
                 </h2>
-                <audio
-                  className="w-full"
-                  preload="none"
-                  controls
-                  src={recording}
-                ></audio>
+                <div className="mb-5">{transcript.text}</div>
               </div>
             ))}
         </div>

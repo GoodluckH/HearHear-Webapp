@@ -20,7 +20,19 @@ export interface Meeting {
   id: string; // the meeting id; which is also a unix timestamp
   guildId: string; // the guild id
   channelName: string; // the channel id
-  recordings: string[]; // the recording paths
+  transcripts: Transcript[]; // the transcript path
+}
+
+export interface Transcript {
+  filename: string;
+  audio_link: string;
+  text: string;
+}
+
+export async function getTextFromUrl(url: string) {
+  const response = await fetch(url);
+  const text = await response.text();
+  return text;
 }
 
 export async function getRecordingFileAsBase64(filePath: string) {
@@ -42,6 +54,8 @@ export async function buildMeetings(files: string[]) {
     return null;
   });
 
+  const text_files = files.filter((file) => file.endsWith(".txt"));
+
   await Promise.all(
     Object.keys(channelNameCache).map(async (channelId) => {
       const channelName = await getChannelNameById(channelId);
@@ -49,24 +63,44 @@ export async function buildMeetings(files: string[]) {
     })
   );
 
-  await Promise.all(
-    files.map(async (file) => {
-      const [guildId, channelId, meetingId] = file.split("/");
-      let channelName = channelNameCache[channelId];
-      const meeting = meetings[meetingId];
+  text_files.map(async (file) => {
+    const [guildId, channelId, meetingId, filename] = file.split("/");
+    let channelName = channelNameCache[channelId];
+    const meeting = meetings[meetingId];
 
-      if (meeting) {
-        meeting.recordings.push(`${S3_PUBLIC_URL}${file}`);
-      } else {
-        meetings[meetingId] = {
-          id: meetingId,
-          guildId,
-          channelName,
-          recordings: [`${S3_PUBLIC_URL}${file}`],
-        };
-      }
+    const transcript = {
+      filename,
+      audio_link: `${S3_PUBLIC_URL}${guildId}/${channelId}/${meetingId}/${filename.replace(
+        ".txt",
+        ".ogg"
+      )}`,
+      text: `${S3_PUBLIC_URL}${guildId}/${channelId}/${meetingId}/${filename}`,
+    };
+
+    if (meeting) {
+      meeting.transcripts.push(transcript);
+    } else {
+      meetings[meetingId] = {
+        id: meetingId,
+        guildId,
+        channelName,
+        transcripts: [transcript],
+      };
+    }
+  });
+
+  await Promise.all(
+    Object.keys(meetings).map(async (meetingId) => {
+      const meeting = meetings[meetingId];
+      await Promise.all(
+        meeting.transcripts.map(async (transcript) => {
+          transcript.text = await getTextFromUrl(transcript.text);
+        })
+      );
     })
   );
+
+  console.log(Object.values(meetings)[0].transcripts);
 
   return Object.values(meetings);
 }
@@ -106,3 +140,9 @@ export async function getMeetings(guildId: string) {
   const files = await getRecordingPathAsStrings(guildId);
   return await buildMeetings(files);
 }
+
+// getMeetings("280715328219250689").then((meetings) => {
+//   meetings.forEach((meeting) => {
+//     console.log(meeting.transcripts);
+//   });
+// });

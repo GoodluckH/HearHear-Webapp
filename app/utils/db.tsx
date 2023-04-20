@@ -100,8 +100,6 @@ export async function buildMeetings(files: string[]) {
     })
   );
 
-  console.log(Object.values(meetings)[0].transcripts);
-
   return Object.values(meetings);
 }
 

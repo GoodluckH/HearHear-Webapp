@@ -1,4 +1,4 @@
-import type { LinksFunction } from "@remix-run/node";
+import { json, type LinksFunction, type LoaderFunction } from "@remix-run/node";
 import {
   Links,
   LiveReload,
@@ -6,14 +6,28 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "@remix-run/react";
 import stylesheet from "~/tailwind.css";
+import type { DiscordUser } from "./auth.server";
+import { auth } from "./auth.server";
+import NavBar from "./components/nav";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
 ];
 
+export let loader: LoaderFunction = async ({ request }) => {
+  let user = await auth.isAuthenticated(request);
+
+  if (!user) {
+    return json({ user: undefined });
+  }
+  return json({ user });
+};
 export default function App() {
+  useLoaderData<{ user: DiscordUser | undefined }>();
+
   return (
     <html lang="en">
       <head>
@@ -22,7 +36,9 @@ export default function App() {
         <Meta />
         <Links />
       </head>
+
       <body className="bg-gray-200">
+        <NavBar />
         <Outlet />
         <ScrollRestoration />
         <Scripts />

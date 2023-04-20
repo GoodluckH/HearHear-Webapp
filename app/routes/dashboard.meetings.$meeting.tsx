@@ -1,6 +1,6 @@
 import { useRouteData, useRouteParam } from "~/utils/data";
 import type { DashboardProps } from "./dashboard";
-import type { LoaderFunction } from "@remix-run/node";
+import { type LoaderFunction } from "@remix-run/node";
 import type { Meeting, Transcript } from "~/utils/db";
 import { getMeetings } from "~/utils/db";
 import { useLoaderData } from "@remix-run/react";
@@ -40,8 +40,8 @@ export default function MeetingPage() {
       </div>
       <ul>
         {meetings
-          .sort((a, b) => Number(b.id) - Number(a.id))
-          .map((meeting) => (
+          .sort((a: Meeting, b: Meeting) => Number(b.id) - Number(a.id))
+          .map((meeting: Meeting) => (
             <Collapsible key={meeting.id} meeting={meeting} />
           ))}
       </ul>
@@ -57,7 +57,7 @@ const Collapsible: FC<MeetingProp> = ({ meeting }) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   return (
-    <div>
+    <div className="my-3">
       <button
         className="w-full bg-gray-100 rounded-lg py-2 px-4 flex justify-between items-center focus:outline-none"
         onClick={() => setIsCollapsed(!isCollapsed)}

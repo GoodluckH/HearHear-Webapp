@@ -11,7 +11,7 @@ import {
 import stylesheet from "~/tailwind.css";
 import type { DiscordUser } from "./auth.server";
 import { auth } from "./auth.server";
-import NavBar from "./components/nav";
+import { Analytics } from "@vercel/analytics/react";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -37,9 +37,9 @@ export default function App() {
         <Links />
       </head>
 
-      <body className="bg-gray-200">
-        <NavBar />
+      <body>
         <Outlet />
+        <Analytics />
         <ScrollRestoration />
         <Scripts />
         <LiveReload />

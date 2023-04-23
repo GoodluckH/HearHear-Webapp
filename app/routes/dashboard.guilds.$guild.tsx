@@ -7,7 +7,7 @@ import { NavLink, Outlet, useLoaderData } from "@remix-run/react";
 import { useState } from "react";
 import { convertUNIXToString } from "~/utils/timestamp";
 
-import * as MagicCubeAnimation from "~/assets/lottie/magic-cube.json";
+import MagicCubeAnimation from "~/assets/lottie/magic-cube.gif";
 import * as NoMeetingAnimation from "~/assets/lottie/no-meeting.json";
 import { useLottie } from "lottie-react";
 
@@ -198,17 +198,14 @@ function NoMeetingPage() {
 }
 
 function MagicBotInvite({ guild }: { guild: BasicGuildInfo }) {
-  const options = {
-    animationData: MagicCubeAnimation,
-    loop: true,
-  };
-
-  const { View } = useLottie(options);
-
   return (
     <>
       <div className="flex flex-col items-center h-full">
-        <div className="w-96 h-96 mt-10">{View}</div>
+        <img
+          src={MagicCubeAnimation}
+          alt="Magic Cube"
+          className="w-96 h-96 mt-10"
+        />
         <h1 className="text-3xl font-bold mb-0 mt-[-2.5rem]">
           let the magic happen
         </h1>

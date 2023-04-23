@@ -11,6 +11,7 @@ import { config } from "dotenv";
 import type { DiscordUser } from "~/auth.server";
 import { useRouteParam } from "~/utils/data";
 import { useState } from "react";
+import HowToUseBOT from "~/components/faq";
 
 export interface BasicGuildInfo {
   id: string;
@@ -71,15 +72,15 @@ export default function DashboardLayout() {
 
   return (
     <div className="flex bg-gray-50 overflow-hidden min-h-screen">
-      <nav className="w-64 bg-slate-100 border-r border-gray-200">
-        <div className="px-6 py-8">
+      <nav className="w-64 bg-slate-100 border-r border-gray-200 h-screen flex flex-col">
+        <div className="px-6 pt-8">
           <h1 className="text-xl font-bold mb-4">Dashboard</h1>
           <h2 className="text-sm text-gray-600 mb-4">
             Welcome {user.displayName}#{user.discriminator}
           </h2>
-          <p className="mb-4">Your Servers</p>
+          <h2 className="text-md font-bold">Your Servers</h2>
         </div>
-        <ul className="flex-grow space-y-2 text-sm text-gray-600 w-full min-h-[70vh]">
+        <ul className="flex-grow text-sm text-gray-600 w-full">
           {guilds.map((guild: BasicGuildInfo) => (
             <NavLink
               to={`/dashboard/guilds/${guild.id}`}
@@ -111,11 +112,31 @@ export default function DashboardLayout() {
             </NavLink>
           ))}
         </ul>
-        <Form action="/auth/discord/logout" method="post">
-          <button className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full ml-6">
-            Logout
-          </button>
-        </Form>
+
+        <footer className="h-[3rem] flex items-center mb-10 ">
+          <HowToUseBOT />
+        </footer>
+
+        <footer className="h-[4rem] bg-slate-800 flex justify-center items-center">
+          <img
+            src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`}
+            alt={user.displayName}
+            className="w-10 h-10 rounded-full mx-1"
+          />
+
+          <div className="flex flex-col ml-1">
+            <span className="text-gray-100 font-medium text-sm">
+              {user.displayName}
+            </span>
+            <span className="text-gray-400 text-sm">#{user.discriminator}</span>
+          </div>
+
+          <Form action="/auth/discord/logout" method="post">
+            <button className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-full ml-8 mr-1">
+              out
+            </button>
+          </Form>
+        </footer>
       </nav>
       <div className="flex-1 max-h-screen overflow-auto">
         {navigation.state !== "idle" ? <Skeleton /> : <Outlet />}

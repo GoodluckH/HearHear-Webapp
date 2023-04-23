@@ -3,6 +3,11 @@ import { Form } from "@remix-run/react";
 import type { DiscordUser } from "~/auth.server";
 import { Link } from "react-router-dom";
 import { useRouteData } from "~/utils/data";
+import { redirect } from "@remix-run/node";
+
+export let loader = () => {
+  return redirect("/");
+};
 
 export default function Login() {
   const user = useRouteData<{ user: DiscordUser | undefined }>("root")?.user;

@@ -16,8 +16,8 @@ export default function Login() {
     return (
       <div className="">
         <Form action="/auth/discord" method="post">
-          <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
-            Login with Discord
+          <button className="bg-black hover:bg-gray-800 text-white font-bold py-4 px-4 rounded mt-5 border-white border-2">
+            ✨ this button away ✨
           </button>
         </Form>
       </div>
@@ -25,15 +25,14 @@ export default function Login() {
   } else {
     return (
       <div className="">
-        <Link
-          to="/dashboard"
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
-        >
-          Go to Dashboard
-        </Link>
-        <p className="mt-4 text-gray-600">
-          Welcome back, {user.displayName}#{user.discriminator}!
+        <p className="mt-4 text-gray-300">
+          👋 Welcome back, {user.displayName}!
         </p>
+        <Link to="/dashboard">
+          <button className="bg-black hover:bg-gray-800 text-white font-bold py-4 px-4 rounded mt-5 border-white border-2">
+            go to my dashboard
+          </button>
+        </Link>
       </div>
     );
   }

@@ -2,22 +2,22 @@ import { Form } from "@remix-run/react";
 import { useState } from "react";
 import type { DiscordUser } from "~/auth.server";
 import { useRouteData } from "~/utils/data";
+import logo from "~/assets/logo.svg";
 
 export default function NavBar() {
   const [isOpen, setIsOpen] = useState(false);
   const user = useRouteData<{ user: DiscordUser | undefined }>("root")?.user;
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0">
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-6">
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <img
-                className="h-8 w-auto"
-                src="https://tailwindui.com/img/logos/workflow-mark-indigo-600.svg"
-                alt="Workflow"
-              />
+              <img className="h-10 w-auto" src={logo} alt="Workflow" />
+              <h1 className="text-2xl font-bold text-gray-900 ml-2">
+                HearHear
+              </h1>
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">

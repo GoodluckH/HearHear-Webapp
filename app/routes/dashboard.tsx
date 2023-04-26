@@ -139,7 +139,8 @@ export default function DashboardLayout() {
       <SelectedMeetingProvider>
         <div className="flex-1 max-h-screen overflow-auto">
           {navigation.state === "loading" &&
-          navigation.location.pathname === "/dashboard" ? (
+          navigation.location.pathname.match(/^\/dashboard\/guilds\/\d+$/) !==
+            null ? (
             <Skeleton />
           ) : (
             <Outlet />

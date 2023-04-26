@@ -3,7 +3,7 @@ import NavBar from "~/components/nav";
 import LandingPage from "~/components/landing";
 
 export const meta: V2_MetaFunction = () => {
-  return [{ title: "HearHear" }];
+  return [{ title: "HearHear | 10x your daily meetings" }];
 };
 
 export default function Index() {

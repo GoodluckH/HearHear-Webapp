@@ -5,6 +5,7 @@ import {
   Outlet,
   useLoaderData,
   useNavigation,
+  type V2_MetaFunction,
 } from "@remix-run/react";
 import { auth } from "~/auth.server";
 import { config } from "dotenv";
@@ -48,6 +49,10 @@ export let loader: LoaderFunction = async ({ request }) => {
   );
 
   return { user, guilds };
+};
+
+export const meta: V2_MetaFunction = ({ data }: { data: DashboardProps }) => {
+  return [{ title: `Dashboard - ${data.user.displayName} - HearHear` }];
 };
 
 export default function DashboardLayout() {

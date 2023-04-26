@@ -1,3 +1,9 @@
+import type { V2_MetaFunction } from "@remix-run/react";
+
+export const meta: V2_MetaFunction = () => {
+  return [{ title: `Privacy Policy` }];
+};
+
 export default function PrivacyPolicyPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

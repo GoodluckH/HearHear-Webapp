@@ -1,4 +1,8 @@
-import React from "react";
+import type { V2_MetaFunction } from "@remix-run/react";
+
+export const meta: V2_MetaFunction = () => {
+  return [{ title: `Terms and Conditions` }];
+};
 
 export default function TermsAndConditionsPage() {
   return (

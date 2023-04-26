@@ -69,7 +69,7 @@ function processTranscripts(transcripts: Transcript[]) {
 
 const PROMPT =
   "Given the following transcript, please provide an insight into the meeting. And format your response in a memo format with proper line-breaks in HTML format. Only have the following headers in the memo. DO NOT MAKE UP ANYTHING ELSE \n\n" +
-  "Subject: (based on the transcript)\n\n" +
-  "Summary: \n\n" +
+  "Subject: \n\n" +
+  "Summary: (feel free to use rich formatting like bullet points)\n\n" +
   "Action Items: (a bullet list for each participant)\n" +
   "\n\n\n Now here's the transcript in JSON format [{username, timestamp, text}]\n\n";

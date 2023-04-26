@@ -112,8 +112,12 @@ export default function GuildPage() {
                                   <div className="font-semibold mb-5">
                                     {date}
                                   </div>
-                                  {meetings_grouped_by_date[date].map(
-                                    (meeting: Meeting) => (
+                                  {meetings_grouped_by_date[date]
+                                    .sort(
+                                      (a: Meeting, b: Meeting) =>
+                                        Number(b.id) - Number(a.id)
+                                    )
+                                    .map((meeting: Meeting) => (
                                       <div
                                         key={meeting.id}
                                         className="flex items-center"
@@ -152,8 +156,7 @@ export default function GuildPage() {
                                           </div>
                                         </NavLink>
                                       </div>
-                                    )
-                                  )}
+                                    ))}
                                 </div>
                               </div>
                             )}

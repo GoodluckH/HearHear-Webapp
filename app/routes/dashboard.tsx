@@ -14,6 +14,7 @@ import { useRouteParam } from "~/utils/hooks";
 import { useState } from "react";
 import HowToUseBOT from "~/components/faq";
 import SelectedMeetingProvider from "~/context/selectedMeetingContext";
+import { ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
 
 export interface BasicGuildInfo {
   id: string;
@@ -135,8 +136,8 @@ export default function DashboardLayout() {
           </div>
 
           <Form action="/auth/discord/logout" method="post">
-            <button className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-full ml-8 mr-1">
-              out
+            <button className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-2 rounded-full ml-8 mr-1">
+              <ArrowRightOnRectangleIcon className="w-6 h-6 text-black stroke-2" />
             </button>
           </Form>
         </footer>

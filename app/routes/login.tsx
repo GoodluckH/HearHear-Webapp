@@ -2,7 +2,7 @@
 import { Form } from "@remix-run/react";
 import type { DiscordUser } from "~/auth.server";
 import { Link } from "react-router-dom";
-import { useRouteData } from "~/utils/data";
+import { useRouteData } from "~/utils/hooks";
 import { redirect } from "@remix-run/node";
 
 export let loader = () => {

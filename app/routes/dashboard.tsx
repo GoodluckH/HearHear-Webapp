@@ -9,9 +9,10 @@ import {
 import { auth } from "~/auth.server";
 import { config } from "dotenv";
 import type { DiscordUser } from "~/auth.server";
-import { useRouteParam } from "~/utils/data";
+import { useRouteParam } from "~/utils/hooks";
 import { useState } from "react";
 import HowToUseBOT from "~/components/faq";
+import SelectedMeetingProvider from "~/context/selectedMeetingContext";
 
 export interface BasicGuildInfo {
   id: string;
@@ -25,10 +26,6 @@ export interface DashboardProps {
   user: DiscordUser;
   guilds: Array<BasicGuildInfo>;
 }
-// const SelectedCardContext = createContext({
-//   selectedGuild: "",
-//   setSelectedGuild: (guildId: string) => {},
-// });
 
 export let loader: LoaderFunction = async ({ request }) => {
   const user = await auth.isAuthenticated(request, {
@@ -83,6 +80,7 @@ export default function DashboardLayout() {
         <ul className="flex-grow text-sm text-gray-600 w-full">
           {guilds.map((guild: BasicGuildInfo) => (
             <NavLink
+              prefetch="intent"
               to={`/dashboard/guilds/${guild.id}`}
               key={guild.id}
               onClick={() => handleClick(guild.id)}
@@ -138,9 +136,16 @@ export default function DashboardLayout() {
           </Form>
         </footer>
       </nav>
-      <div className="flex-1 max-h-screen overflow-auto">
-        {navigation.state !== "idle" ? <Skeleton /> : <Outlet />}
-      </div>
+      <SelectedMeetingProvider>
+        <div className="flex-1 max-h-screen overflow-auto">
+          {navigation.state === "loading" &&
+          navigation.location.pathname === "/dashboard" ? (
+            <Skeleton />
+          ) : (
+            <Outlet />
+          )}
+        </div>
+      </SelectedMeetingProvider>
     </div>
   );
 }

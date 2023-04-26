@@ -1,7 +1,7 @@
 import { Form } from "@remix-run/react";
 import { useState } from "react";
 import type { DiscordUser } from "~/auth.server";
-import { useRouteData } from "~/utils/data";
+import { useRouteData } from "~/utils/hooks";
 import logo from "~/assets/logo.svg";
 
 export default function NavBar() {

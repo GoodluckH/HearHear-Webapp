@@ -1,15 +1,21 @@
-import { useRouteData, useRouteParam } from "~/utils/data";
+import {
+  useMeetingArrayEffect,
+  useRouteData,
+  useRouteParam,
+} from "~/utils/hooks";
 import type { BasicGuildInfo, DashboardProps } from "./dashboard";
 import { type LoaderFunction } from "@remix-run/node";
 import type { Meeting } from "~/utils/db";
 import { getMeetings } from "~/utils/db";
 import { NavLink, Outlet, useLoaderData } from "@remix-run/react";
-import { useState } from "react";
+import { useContext } from "react";
 import { convertUNIXToString } from "~/utils/timestamp";
 
 import MagicCubeAnimation from "~/assets/lottie/magic-cube.gif";
 import * as NoMeetingAnimation from "~/assets/lottie/no-meeting.json";
 import { useLottie } from "lottie-react";
+import { SelectedMeetingContext } from "~/context/selectedMeetingContext";
+import type { SelectedMeetingContextType } from "~/@types/selectedMeeting";
 
 export let loader: LoaderFunction = async ({ request }) => {
   const regexPattern = /\/guilds\/(\d+)/;
@@ -24,21 +30,16 @@ export default function GuildPage() {
   const guilds = useRouteData<DashboardProps>("routes/dashboard")?.guilds || [];
   const guildId = useRouteParam<string>("routes/dashboard", "guild");
 
-  const [selectedCardId, setSelectedCardId] = useState(0);
-  const [selectedMeetingId, setSelectedMeetingId] = useState<
-    string | undefined
-  >(undefined);
+  useMeetingArrayEffect(() => {}, meetings);
 
-  const meetingId = useRouteParam<string>("routes/dashboard", "meeting");
-  if (meetingId !== undefined && selectedMeetingId === undefined) {
-    setSelectedMeetingId(meetingId);
-  }
+  const {
+    selectedCardId,
+    setSelectedCardId,
+    selectedMeetingId,
+    setSelectedMeetingId,
+  } = useContext(SelectedMeetingContext) as SelectedMeetingContextType;
 
   const guild = guilds.find((guild) => guild.id === guildId);
-
-  if (!guild) {
-    return <div>Discord Server Not found</div>;
-  }
 
   const meetings_grouped_by_date = meetings.reduce((acc, meeting) => {
     const date = convertUNIXToString(meeting.id, "%B %d, %Y");
@@ -58,7 +59,7 @@ export default function GuildPage() {
 
   return (
     <>
-      {guild.hasHearHearBot ? (
+      {guild && guild.hasHearHearBot ? (
         <>
           {sorted_meetings.length === 0 ? (
             <>
@@ -119,6 +120,7 @@ export default function GuildPage() {
                                       >
                                         <div className="h-2 w-2 rounded-full bg-gray-500"></div>
                                         <NavLink
+                                          prefetch="intent"
                                           to={`/dashboard/guilds/${guildId}/meetings/${meeting.id}`}
                                           className="flex items-center justify-between w-full"
                                           onClick={() =>
@@ -170,7 +172,17 @@ export default function GuildPage() {
           )}
         </>
       ) : (
-        <MagicBotInvite guild={guild} />
+        <>
+          {guild ? (
+            <MagicBotInvite guild={guild} />
+          ) : (
+            <div className="flex flex-col items-center h-full">
+              <h1 className="text-3xl font-bold mb-0 mt-10">
+                something went wrong when getting server info.
+              </h1>
+            </div>
+          )}
+        </>
       )}
     </>
   );

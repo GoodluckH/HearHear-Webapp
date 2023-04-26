@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import { useState } from "react";
 import { generateInsightFromTranscript } from "~/utils/ai";
-import { useRouteData, useRouteParam } from "~/utils/data";
+import { useRouteData, useRouteParam } from "~/utils/hooks";
 import type { Meeting, Transcript } from "~/utils/db";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";

@@ -1,6 +1,6 @@
 import * as noServerSelectedAnimation from "~/assets/lottie/no-server-selected.json";
 import { useLottie } from "lottie-react";
-import { useRouteData } from "~/utils/data";
+import { useRouteData } from "~/utils/hooks";
 import type { DashboardProps } from "./dashboard";
 
 export default function DashboardIndex() {

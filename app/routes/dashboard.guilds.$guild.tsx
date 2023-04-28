@@ -22,7 +22,11 @@ export let loader: LoaderFunction = async ({ request }) => {
   const match = request.url.match(regexPattern);
   const guildId = match ? match[1] : null;
 
-  return await getMeetings(guildId || "");
+  return await getMeetings(
+    guildId || "",
+    process.env.S3_BUCKET_REGION!,
+    process.env.S3_BUCKET_NAME!
+  );
 };
 
 export default function GuildPage() {
@@ -142,14 +146,12 @@ export default function GuildPage() {
                                             <div>{meeting.channelName}</div>
                                             <div className="text-gray-500">
                                               {convertUNIXToString(
-                                                meeting.id,
+                                                meeting.startTime,
                                                 "%I:%M %p"
                                               )}{" "}
                                               -{" "}
                                               {convertUNIXToString(
-                                                meeting.transcripts[
-                                                  meeting.transcripts.length - 1
-                                                ]!.filename.split("-")[0],
+                                                meeting.endTime,
                                                 "%I:%M %p"
                                               )}
                                             </div>

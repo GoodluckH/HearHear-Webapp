@@ -3,24 +3,20 @@ import {
   ListObjectsV2Command,
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
-
-import { config } from "dotenv";
 import { getChannelNameById } from "./discord";
-config();
 
-const S3_BUCKET_REGION = process.env.S3_BUCKET_REGION;
-const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME;
-const S3_PUBLIC_URL = `https://${S3_BUCKET_NAME}.s3.${S3_BUCKET_REGION}.amazonaws.com/`;
-
-const client = new S3Client({
-  region: S3_BUCKET_REGION!,
-});
+// const S3_BUCKET_REGION = process.env.S3_BUCKET_REGION;
+// const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME;
+// const S3_PUBLIC_URL = `https://${S3_BUCKET_NAME}.s3.${S3_BUCKET_REGION}.amazonaws.com/`;
 
 export interface Meeting {
   id: string; // the meeting id; which is also a unix timestamp
   guildId: string; // the guild id
-  channelName: string; // the channel id
-  transcripts: Transcript[]; // the transcript path
+  channelName: string; // the channel name
+  channelId: string; // the channel id
+  startTime: string; // the start time of the meeting in UNIX timestamp
+  endTime: string; // the end time of the meeting in UNIX timestamp,
+  participants: string[]; // the participants of the meeting
 }
 
 export interface Transcript {
@@ -29,13 +25,78 @@ export interface Transcript {
   text: string;
 }
 
+export async function getTranscripts(
+  guildId: string,
+  channelId: string,
+  meetingId: string,
+  S3_BUCKET_REGION: string,
+  S3_BUCKET_NAME: string
+) {
+  const client = new S3Client({
+    region: S3_BUCKET_REGION!,
+  });
+
+  const command = new ListObjectsV2Command({
+    Bucket: S3_BUCKET_NAME!,
+    Prefix: guildId + "/" + channelId + "/" + meetingId,
+  });
+  const S3_PUBLIC_URL = `https://${S3_BUCKET_NAME}.s3.${S3_BUCKET_REGION}.amazonaws.com/`;
+
+  try {
+    let isTruncated = true;
+    let contents: string[] = [];
+    const transcripts: Transcript[] = [];
+
+    while (isTruncated) {
+      const { Contents, IsTruncated, NextContinuationToken } =
+        await client.send(command);
+
+      if (Contents === undefined || IsTruncated === undefined) break;
+      Contents.map((c) => {
+        if (c.Key !== undefined) contents.push(c.Key);
+        return null;
+      });
+      isTruncated = IsTruncated;
+      command.input.ContinuationToken = NextContinuationToken;
+    }
+
+    const transcriptFilePaths = contents.filter((c) => c.endsWith(".txt"));
+    await Promise.all(
+      transcriptFilePaths.map(async (transcriptPath) => {
+        const text = await getTextFromUrl(`${S3_PUBLIC_URL}${transcriptPath}`);
+        transcripts.push({
+          filename: transcriptPath.split("/").pop()!,
+          audio_link: `${S3_PUBLIC_URL}${transcriptPath.replace(
+            ".txt",
+            ".ogg"
+          )}`,
+          text,
+        });
+      })
+    );
+
+    return transcripts;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
 export async function getTextFromUrl(url: string) {
   const response = await fetch(url);
   const text = await response.text();
   return text;
 }
 
-export async function getRecordingFileAsBase64(filePath: string) {
+export async function getRecordingFileAsBase64(
+  filePath: string,
+  S3_BUCKET_REGION: string,
+  S3_BUCKET_NAME: string
+) {
+  const client = new S3Client({
+    region: S3_BUCKET_REGION!,
+  });
+
   const command = new GetObjectCommand({
     Bucket: S3_BUCKET_NAME!,
     Key: filePath,
@@ -62,50 +123,51 @@ export async function buildMeetings(files: string[]) {
       channelNameCache[channelId] = channelName;
     })
   );
+  const endTimes: Record<string, number> = {};
+  const participants: Record<string, Set<string>> = {};
 
-  text_files.map(async (file) => {
-    const [guildId, channelId, meetingId, filename] = file.split("/");
-    let channelName = channelNameCache[channelId];
-    const meeting = meetings[meetingId];
+  text_files.map((file) => {
+    const meetingId = file.split("/")[2];
+    const filename = file.split("/")[3];
+    const timestamp = parseInt(filename.split("-")[0]);
+    if (endTimes[meetingId] === undefined) endTimes[meetingId] = timestamp;
+    if (timestamp > endTimes[meetingId]) endTimes[meetingId] = timestamp;
 
-    const transcript = {
-      filename,
-      audio_link: `${S3_PUBLIC_URL}${guildId}/${channelId}/${meetingId}/${filename.replace(
-        ".txt",
-        ".ogg"
-      )}`,
-      text: `${S3_PUBLIC_URL}${guildId}/${channelId}/${meetingId}/${filename}`,
-    };
-
-    if (meeting) {
-      meeting.transcripts.push(transcript);
-    } else {
-      meetings[meetingId] = {
-        id: meetingId,
-        guildId,
-        channelName,
-        transcripts: [transcript],
-      };
-    }
+    if (participants[meetingId] === undefined)
+      participants[meetingId] = new Set();
+    const participantId = filename.split("-")[1].slice(0, -4);
+    participants[meetingId].add(participantId);
+    return null;
   });
 
-  await Promise.all(
-    Object.keys(meetings).map(async (meetingId) => {
-      const meeting = meetings[meetingId];
-      await Promise.all(
-        meeting.transcripts.map(async (transcript) => {
-          transcript.text = await getTextFromUrl(transcript.text);
-        })
-      );
-    })
-  );
+  text_files.map((file) => {
+    const [guildId, channelId, meetingId] = file.split("/");
+    let channelName = channelNameCache[channelId];
+
+    meetings[meetingId] = {
+      id: meetingId,
+      guildId,
+      channelId,
+      channelName,
+      startTime: meetingId,
+      endTime: endTimes[meetingId].toString(),
+      participants: Array.from(participants[meetingId]),
+    };
+    return null;
+  });
 
   return Object.values(meetings);
 }
 
 export async function getRecordingPathAsStrings(
-  guildId: string
+  guildId: string,
+  S3_BUCKET_REGION: string,
+  S3_BUCKET_NAME: string
 ): Promise<string[]> {
+  const client = new S3Client({
+    region: S3_BUCKET_REGION!,
+  });
+
   const command = new ListObjectsV2Command({
     Bucket: S3_BUCKET_NAME!,
     Prefix: guildId,
@@ -134,13 +196,15 @@ export async function getRecordingPathAsStrings(
   }
 }
 
-export async function getMeetings(guildId: string) {
-  const files = await getRecordingPathAsStrings(guildId);
+export async function getMeetings(
+  guildId: string,
+  S3_BUCKET_REGION: string,
+  S3_BUCKET_NAME: string
+) {
+  const files = await getRecordingPathAsStrings(
+    guildId,
+    S3_BUCKET_REGION,
+    S3_BUCKET_NAME
+  );
   return await buildMeetings(files);
 }
-
-// getMeetings("280715328219250689").then((meetings) => {
-//   meetings.forEach((meeting) => {
-//     console.log(meeting.transcripts);
-//   });
-// });

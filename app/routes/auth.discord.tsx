@@ -11,7 +11,5 @@ export let loader: LoaderFunction = async ({ request }) => {
 };
 
 export let action: ActionFunction = ({ request }) => {
-  console.log("auth.discord.tsx");
-
   return auth.authenticate("discord", request);
 };

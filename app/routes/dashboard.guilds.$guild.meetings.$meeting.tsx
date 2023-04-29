@@ -13,6 +13,8 @@ import { useState } from "react";
 import type { Insight } from "~/utils/supabase";
 import { createSupabaseClient } from "~/utils/supabase";
 import ReactMarkdown from "react-markdown";
+import * as NoMeetingAnimation from "~/assets/lottie/no-meeting.json";
+import { useLottie } from "lottie-react";
 
 export async function loader() {
   return json({
@@ -108,6 +110,22 @@ export default function MeetingPage() {
 }
 
 function Collapsible({ insights }: { insights: Insight[] }) {
+  const options = {
+    animationData: NoMeetingAnimation,
+    loop: true,
+  };
+
+  const { View } = useLottie(options);
+  if (insights.length === 0) {
+    return (
+      <div className="flex flex-col items-center h-full">
+        <div className="w-40 h-40">{View}</div>
+        <p className="text-md font-bold text-gray-600 mt-5">
+          No insights generated yet
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="mt-5">
       {insights.map((insight, id) => (

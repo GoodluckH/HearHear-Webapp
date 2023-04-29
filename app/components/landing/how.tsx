@@ -1,5 +1,7 @@
 import { Link } from "@remix-run/react";
 import HearHearVid from "~/assets/hearhear-demo.mp4";
+import StageIcon from "~/assets/Stage-Icon.svg";
+import VoiceIcon from "~/assets/Voice-Icon.svg";
 
 export default function HowHearHearWorks() {
   return (
@@ -21,6 +23,25 @@ export default function HowHearHearWorks() {
           <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl sm:tracking-tight lg:text-5xl">
             How HearHear Works
           </h2>
+          <div className="mt-5 space-y-6 text-sm text-gray-500 ">
+            <p className="border-green-700 border-2 rounded-lg p-1 max-w-fit bg-green-200 bg-opacity-90">
+              Supported Channel Types:
+              <span>
+                <img
+                  src={VoiceIcon}
+                  className="inline-block h-5 w-5 ml-2"
+                  alt="Voice Channel"
+                />
+              </span>
+              <span>
+                <img
+                  src={StageIcon}
+                  className="inline-block h-5 w-5 ml-2"
+                  alt="Stage Channel"
+                />
+              </span>
+            </p>
+          </div>
           <div className="max-w-xl">
             <div className="mt-10">
               <div className="flex">
@@ -47,7 +68,7 @@ export default function HowHearHearWorks() {
                   </h3>
                   <p className="mt-2 text-base text-gray-500">
                     Make sure you assign the right roles for the bot to join
-                    private voice channels.
+                    channels or stages that require permissions.
                   </p>
                 </div>
               </div>
@@ -62,7 +83,7 @@ export default function HowHearHearWorks() {
                     Start a Meeting
                   </h3>
                   <p className="mt-2 text-base text-gray-500">
-                    When you're in a voice channel, type{" "}
+                    When you're in a voice channel or stage, type{" "}
                     <code className="text-black border-gray-500 border-2 rounded-md p-1">
                       /start
                     </code>{" "}

@@ -116,7 +116,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProp> = ({
           ))}
         </ul>
         <button
-          className="w-full bg-gray-300 hover:bg-gray-500 text-white px-4 py-2 rounded-lg flex items-center justify-center"
+          className="w-full bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded-lg flex items-center justify-center disabled:bg-gray-400 disabled:hover:bg-gray-400"
           disabled={inputFields.some((item) => item === "" || item === null)}
           onClick={() => {
             setInputFields([...inputFields, ""]);

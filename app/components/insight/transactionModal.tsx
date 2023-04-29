@@ -11,6 +11,7 @@ type prop = {
   meeting: Meeting | undefined;
   supabaseKey: string | undefined;
   user: DiscordUser;
+  fetchInsights: () => void;
   openaiKey: string | undefined;
   S3_BUCKET_REGION: string;
   S3_BUCKET_NAME: string;
@@ -30,6 +31,7 @@ export const GenerateInsight: React.FC<prop> = ({
   supabaseKey,
   openaiKey,
   user,
+  fetchInsights,
   S3_BUCKET_REGION,
   S3_BUCKET_NAME,
   AWS_ACCESS_KEY_ID,
@@ -97,6 +99,7 @@ export const GenerateInsight: React.FC<prop> = ({
       );
       await supabase.uploadInsight(meeting!, user.id, insightText);
       await supabase.addCredit(user, userCredits, -INSIGHT_GENERATION_COST);
+      await fetchInsights();
     } catch (error) {
       console.log(error);
     }

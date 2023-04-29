@@ -45,15 +45,16 @@ export default function MeetingPage() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loadingInsights, setLoadingInsights] = useState<boolean>(false);
 
-  useInsightArrayEffect(() => {
-    const fetchInsights = async () => {
-      setLoadingInsights(true);
-      const supabase = createSupabaseClient(supabaseKey!);
-      const retrievedInsights = await supabase.getInsights(thisMeeting!.id);
+  const fetchInsights = async () => {
+    setLoadingInsights(true);
+    const supabase = createSupabaseClient(supabaseKey!);
+    const retrievedInsights = await supabase.getInsights(thisMeeting!.id);
 
-      setInsights(retrievedInsights);
-      setLoadingInsights(false);
-    };
+    setInsights(retrievedInsights);
+    setLoadingInsights(false);
+  };
+
+  useInsightArrayEffect(() => {
     fetchInsights();
   }, [insights, thisMeeting!.id]);
 
@@ -67,6 +68,7 @@ export default function MeetingPage() {
             supabaseKey={supabaseKey}
             openaiKey={openai_key}
             user={user!}
+            fetchInsights={fetchInsights}
             S3_BUCKET_REGION={S3_BUCKET_REGION!}
             S3_BUCKET_NAME={S3_BUCKET_NAME!}
             AWS_ACCESS_KEY_ID={AWS_ACCESS_KEY_ID!}

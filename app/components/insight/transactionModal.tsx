@@ -5,6 +5,7 @@ import { getTranscripts, type Meeting } from "~/utils/db";
 import { generateInsightFromTranscript } from "~/utils/ai";
 import { createSupabaseClient } from "~/utils/supabase";
 import type { DiscordUser } from "~/auth.server";
+import { TemplateBuilder } from "./templateBuilder";
 
 type prop = {
   meeting: Meeting | undefined;
@@ -13,9 +14,16 @@ type prop = {
   openaiKey: string | undefined;
   S3_BUCKET_REGION: string;
   S3_BUCKET_NAME: string;
+  AWS_ACCESS_KEY_ID: string;
+  AWS_SECRET_ACCESS_KEY: string;
 };
 
 const INSIGHT_GENERATION_COST = 5;
+
+const preBuiltTemplates: Record<number, string[]> = {
+  0: ["Subject", "Summary", "Action Items (by participants)"],
+  1: ["Subject", "Summary", "Frequently Asked Questions (by participant)"],
+};
 
 export const GenerateInsight: React.FC<prop> = ({
   meeting,
@@ -24,12 +32,21 @@ export const GenerateInsight: React.FC<prop> = ({
   user,
   S3_BUCKET_REGION,
   S3_BUCKET_NAME,
+  AWS_ACCESS_KEY_ID,
+  AWS_SECRET_ACCESS_KEY,
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [userCredits, setUserCredits] = useState(0);
+  const [inputFields, setInputFields] = useState<string[]>(
+    preBuiltTemplates[0]
+  );
 
   const cancelButtonRef = useRef(null);
+
+  const handleSetInputFields = (value: string[]) => {
+    setInputFields(value);
+  };
 
   const supabase = createSupabaseClient(supabaseKey!);
 
@@ -61,7 +78,9 @@ export const GenerateInsight: React.FC<prop> = ({
       meeting!.channelId,
       meeting!.id,
       S3_BUCKET_REGION,
-      S3_BUCKET_NAME
+      S3_BUCKET_NAME,
+      AWS_ACCESS_KEY_ID,
+      AWS_SECRET_ACCESS_KEY
     );
 
     // TODO: handle error
@@ -73,7 +92,8 @@ export const GenerateInsight: React.FC<prop> = ({
     try {
       const insightText = await generateInsightFromTranscript(
         transcripts,
-        openaiKey || ""
+        openaiKey || "",
+        inputFields
       );
       await supabase.uploadInsight(meeting!, user.id, insightText);
       await supabase.addCredit(user, userCredits, -INSIGHT_GENERATION_COST);
@@ -82,6 +102,7 @@ export const GenerateInsight: React.FC<prop> = ({
     }
 
     setLoading(false);
+    setOpen(false);
   };
 
   const directToPurchase = async () => {
@@ -139,7 +160,7 @@ export const GenerateInsight: React.FC<prop> = ({
                 leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                 leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
               >
-                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
                   <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                     <div className="sm:flex sm:items-start">
                       <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 sm:mx-0 sm:h-10 sm:w-10">
@@ -155,6 +176,11 @@ export const GenerateInsight: React.FC<prop> = ({
                         >
                           Insight Generation Confirmation
                         </Dialog.Title>
+                        <TemplateBuilder
+                          inputFields={inputFields}
+                          setInputFields={handleSetInputFields}
+                          preBuiltTemplates={preBuiltTemplates}
+                        />
                         <HasEnoughCredits userCredits={userCredits} />
                       </div>
                     </div>

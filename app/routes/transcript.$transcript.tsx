@@ -18,7 +18,9 @@ export let loader: LoaderFunction = async ({ request }) => {
     channelId,
     meetingId,
     process.env.S3_BUCKET_REGION!,
-    process.env.S3_BUCKET_NAME!
+    process.env.S3_BUCKET_NAME!,
+    process.env.AWS_ACCESS_KEY_ID!,
+    process.env.AWS_SECRET_ACCESS_KEY!
   );
 };
 

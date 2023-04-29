@@ -1,6 +1,7 @@
 import { useMatches } from "@remix-run/react";
 import { useEffect, useRef } from "react";
 import type { Meeting } from "./db";
+import type { Insight } from "./supabase";
 
 export const useRouteData = <T,>(routeId: string): T | undefined => {
   const matches = useMatches();
@@ -21,7 +22,7 @@ export const useRouteParam = <T,>(
   return param as T | undefined;
 };
 
-function arrayEqual(a1: Meeting[], a2: Meeting[]) {
+function meetingArrayEqual(a1: Meeting[], a2: Meeting[]) {
   if (a1.length !== a2.length) return false;
   for (let i = 0; i < a1.length; i++) {
     if (a1[i].id !== a2[i].id) return false;
@@ -39,7 +40,34 @@ export const useMeetingArrayEffect = (
 ) => {
   const ref = useRef<Meeting[]>(deps);
 
-  if (!arrayEqual(deps, ref.current)) {
+  if (!meetingArrayEqual(deps, ref.current)) {
+    ref.current = deps;
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(cb, [ref.current]);
+};
+
+function insightArrayEqual(
+  a1: Insight[],
+  a2: Insight[],
+  meetingId1: string,
+  meetingId2: string
+) {
+  if (meetingId1 !== meetingId2) return false;
+  if (a1.length !== a2.length) return false;
+  for (let i = 0; i < a1.length; i++) {
+    if (a1[i].id !== a2[i].id) return false;
+  }
+  return true;
+}
+export const useInsightArrayEffect = (
+  cb: () => MaybeCleanUpFn,
+  deps: [Insight[], string]
+) => {
+  const ref = useRef<[Insight[], string]>(deps);
+
+  if (!insightArrayEqual(deps[0], ref.current[0], deps[1], ref.current[1])) {
     ref.current = deps;
   }
 

@@ -4,7 +4,8 @@ import { Configuration, OpenAIApi } from "openai";
 
 export async function generateInsightFromTranscript(
   transcripts: Transcript[],
-  key: string
+  key: string,
+  sections: string[]
 ) {
   const configuration = new Configuration({
     apiKey: key,
@@ -24,18 +25,18 @@ export async function generateInsightFromTranscript(
   try {
     const res = await openai.createCompletion({
       model: "text-davinci-003",
-      prompt: PROMPT + JSON.stringify(processedTranscripts),
+      prompt: buildPrompt(sections) + JSON.stringify(processedTranscripts),
       temperature: 0.1,
       max_tokens: 1000,
     });
 
-    // replace all the new lines with <br>
+    // replace all <h1 id='S&B*'>
+    const searchRegExp = new RegExp("<h1 id='S&B*'>", "g");
+    const replaceWith = "<h1 className='font-bold text-xl'>";
     let styledText = res.data.choices[0].text!.replace(
-      "Subject:",
-      "<b>Subject:</b>"
+      searchRegExp,
+      replaceWith
     );
-    styledText = styledText.replace("Summary:", "<b>Summary:</b>");
-    styledText = styledText.replace("Action Items:", "<b>Action Items:</b>");
 
     return styledText;
   } catch (err) {
@@ -59,9 +60,16 @@ function processTranscripts(transcripts: Transcript[]) {
   }));
 }
 
-const PROMPT =
-  "Given the following transcript, please provide an insight into the meeting. And format your response in a memo format with proper line-breaks in HTML format. Only have the following headers in the memo. DO NOT MAKE UP ANYTHING ELSE \n\n" +
-  "Subject: \n\n" +
-  "Summary: (feel free to use rich formatting like bullet points)\n\n" +
-  "Action Items: (a bullet list for each participant)\n" +
-  "\n\n\n Now here's the transcript in JSON format [{username, timestamp, text}]\n\n";
+const BASE_PROMPT =
+  "Given the following transcript, please provide an insight into the meeting. And format your response with proper line-breaks in markdown format. Only have the following headers (do no include parenthesis) in the memo. Use bullet points and the username field provided in json whenever appropriate. Make all headers with ##. DO NOT MAKE UP ANYTHING ELSE \n\n";
+
+function buildPrompt(sections: string[]) {
+  let prompt = BASE_PROMPT;
+  sections.forEach((section) => {
+    prompt += section + "\n\n";
+  });
+  prompt +=
+    "\n\n\n Now here's the transcript in JSON format [{username, timestamp, text}]\n\n";
+
+  return prompt;
+}

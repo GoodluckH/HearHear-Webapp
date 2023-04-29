@@ -10,6 +10,14 @@ export function createSupabaseClient(key: string) {
   return new MySupabaseClient(supabaseUrl, key);
 }
 
+export type Insight = {
+  id: string;
+  created_at: string;
+  displayName: string;
+  discriminator: string;
+  text: string;
+};
+
 export class MySupabaseClient {
   supabase: SupabaseClient<any, "public", any>;
 
@@ -29,16 +37,21 @@ export class MySupabaseClient {
    * strategy
    */
   public async loginUser(user: DiscordUser) {
-    const { error } = await this.supabase.from("users").upsert(
-      {
-        id: user.id,
-        credits: 10,
-      },
-      { onConflict: "id", ignoreDuplicates: true }
-    );
-
-    if (error) {
-      throw new Error(error.message);
+    try {
+      const userExist = await this.checkIfExists("users", "id", user.id);
+      if (!userExist) {
+        await this.supabase.from("users").insert([
+          {
+            id: user.id,
+            display_name: user.displayName,
+            discriminator: user.discriminator,
+            credits: 10,
+          },
+        ]);
+      }
+    } catch (e) {
+      console.log(e);
+      throw e;
     }
   }
 
@@ -120,6 +133,58 @@ export class MySupabaseClient {
     if (error) {
       throw new Error(error.message);
     }
+  }
+
+  public async getInsights(meetingId: string) {
+    console.log(meetingId);
+
+    const { data, error } = await this.supabase
+      .from("insights")
+      .select("*, user_id::text, meeting_id::text")
+      .eq("meeting_id", meetingId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+    console.log(data);
+
+    if (data && data.length > 0) {
+      const insights: Insight[] = [];
+      await Promise.all(
+        data.map(async (row) => {
+          const user = await this.supabase
+            .from("users")
+            .select("*")
+            // @ts-ignore
+            .eq("id", BigInt(row.user_id));
+
+          if (user.error) {
+            throw new Error(user.error.message);
+          }
+
+          const displayName =
+            user.data && user.data.length >= 1 ? user.data[0].display_name : "";
+          const discriminator =
+            user.data && user.data.length >= 1
+              ? user.data[0].discriminator
+              : "";
+
+          insights.push({
+            // @ts-ignore
+            id: row.id,
+            // @ts-ignore
+            created_at: row.created_at,
+            displayName,
+            discriminator,
+            // @ts-ignore
+            text: row.insight_text,
+          });
+        })
+      );
+      return insights;
+    }
+
+    return [];
   }
 
   // public async getParticipants(

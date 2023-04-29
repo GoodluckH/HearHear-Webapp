@@ -30,10 +30,16 @@ export async function getTranscripts(
   channelId: string,
   meetingId: string,
   S3_BUCKET_REGION: string,
-  S3_BUCKET_NAME: string
+  S3_BUCKET_NAME: string,
+  AWS_ACCESS_KEY_ID: string,
+  AWS_SECRET_ACCESS_KEY: string
 ) {
   const client = new S3Client({
     region: S3_BUCKET_REGION!,
+    credentials: {
+      accessKeyId: AWS_ACCESS_KEY_ID!,
+      secretAccessKey: AWS_SECRET_ACCESS_KEY!,
+    },
   });
 
   const command = new ListObjectsV2Command({

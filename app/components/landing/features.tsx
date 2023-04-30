@@ -1,5 +1,3 @@
-import * as OrangeRocket from "~/assets/lottie/orange-rocket.json";
-import { useLottie } from "lottie-react";
 import InsightGenerationVideo from "~/assets/insight-generation.mp4";
 
 import {
@@ -9,10 +7,6 @@ import {
 } from "@heroicons/react/24/outline";
 
 export default function Features() {
-  const { View } = useLottie({
-    animationData: OrangeRocket,
-    loop: true,
-  });
   return (
     <div className="bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-col md:flex-col lg:flex-row items-center">
@@ -33,10 +27,9 @@ export default function Features() {
                   Generate Customized Insights
                 </h3>
                 <p className="mt-2 text-base text-gray-500">
-                  HearHear generates insights HearHear also generates any
-                  insights based on the templates you built. Whether it's
-                  summary in haiku format, action items, vibe check, or tension
-                  analysis, sky is the limit.
+                  HearHear can generate any insight based on the templates you
+                  built. Whether it's summary in haiku format, action items,
+                  vibe check, or tension analysis, sky is the limit.
                 </p>
               </div>
             </div>

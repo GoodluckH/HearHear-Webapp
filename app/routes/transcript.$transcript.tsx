@@ -1,10 +1,11 @@
-import type { LoaderFunction } from "@remix-run/node";
+import { redirect, type LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { useState } from "react";
 import type { Transcript } from "~/utils/db";
 import { getTranscripts } from "~/utils/db";
 import { convertUNIXToString } from "~/utils/timestamp";
 import { SpeakerWaveIcon } from "@heroicons/react/24/solid";
+import { auth } from "~/auth.server";
 
 export let loader: LoaderFunction = async ({ request }) => {
   const match = request.url.split("/").pop()!.split("-");
@@ -12,6 +13,16 @@ export let loader: LoaderFunction = async ({ request }) => {
   const guildId = match[0];
   const channelId = match[1];
   const meetingId = match[2];
+
+  const user = await auth.isAuthenticated(request, {
+    failureRedirect: "/login",
+  });
+
+  // check if user's guild has guildId
+  const userGuildIds = user.guilds ? user.guilds.map((guild) => guild.id) : [];
+  if (!userGuildIds.includes(guildId)) {
+    return "Unauthorized";
+  }
 
   return await getTranscripts(
     guildId,
@@ -25,8 +36,19 @@ export let loader: LoaderFunction = async ({ request }) => {
 };
 
 export default function TranscriptPage() {
+  const authorization = useLoaderData<string | null>();
   const transcripts = useLoaderData<Transcript[] | null>();
   const [currentAudio, setCurrentAudio] = useState("");
+
+  if (authorization === "Unauthorized") {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h1 className="text-3xl font-bold">
+          You do not have permission to view this page.
+        </h1>
+      </div>
+    );
+  }
 
   if (transcripts === null) {
     return (

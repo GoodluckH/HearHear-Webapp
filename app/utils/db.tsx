@@ -69,7 +69,11 @@ export async function getTranscripts(
     const transcriptFilePaths = contents.filter((c) => c.endsWith(".txt"));
     await Promise.all(
       transcriptFilePaths.map(async (transcriptPath) => {
-        const text = await getTextFromUrl(`${S3_PUBLIC_URL}${transcriptPath}`);
+        const text = await getTextFromUrl(
+          transcriptPath,
+          S3_BUCKET_REGION,
+          S3_BUCKET_NAME
+        );
         transcripts.push({
           filename: transcriptPath.split("/").pop()!,
           audio_link: `${S3_PUBLIC_URL}${transcriptPath.replace(
@@ -88,10 +92,24 @@ export async function getTranscripts(
   }
 }
 
-export async function getTextFromUrl(url: string) {
-  const response = await fetch(url);
-  const text = await response.text();
-  return text;
+export async function getTextFromUrl(
+  url: string,
+  S3_BUCKET_REGION: string,
+  S3_BUCKET_NAME: string
+) {
+  const client = new S3Client({
+    region: S3_BUCKET_REGION!,
+  });
+
+  const command = new GetObjectCommand({
+    Bucket: S3_BUCKET_NAME!,
+    Key: url,
+  });
+
+  const { Body } = await client.send(command);
+  if (Body === undefined) return "";
+
+  return await Body.transformToString();
 }
 
 export async function getRecordingFileAsBase64(

@@ -117,7 +117,8 @@ export default function TranscriptPage() {
             </h2>
             {/* Add onClick event handler to transcript text */}
             <div
-              className="p-4 mb-5 text-gray-600 text-lg cursor-pointer hover:border-gray-200 hover:border hover:rounded-lg hover:shadow-lg"
+              // className="p-4 mb-5 text-gray-600 text-lg cursor-pointer hover:border-gray-200 hover:border hover:rounded-lg hover:shadow-lg"
+              className="p-4 mb-5 text-gray-600 text-lg"
               // onClick={() => handleClick(transcript, id)}
             >
               {transcript.text}

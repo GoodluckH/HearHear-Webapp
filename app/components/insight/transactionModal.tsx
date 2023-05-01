@@ -1,9 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { BanknotesIcon, PlusIcon } from "@heroicons/react/24/outline";
-import type { ProcessedTranscript } from "~/utils/db";
 import { type Meeting } from "~/utils/db";
-import { generateInsightFromTranscript } from "~/utils/ai";
 import { createSupabaseClient } from "~/utils/supabase";
 import type { DiscordUser } from "~/auth.server";
 import { TemplateBuilder } from "./templateBuilder";
@@ -13,8 +11,6 @@ type prop = {
   supabaseKey: string | undefined;
   user: DiscordUser;
   fetchInsights: () => void;
-  openaiKey: string | undefined;
-  processedTranscripts: ProcessedTranscript[];
 };
 
 const INSIGHT_GENERATION_COST = 5;
@@ -27,10 +23,8 @@ const preBuiltTemplates: Record<number, string[]> = {
 export const GenerateInsight: React.FC<prop> = ({
   meeting,
   supabaseKey,
-  openaiKey,
   user,
   fetchInsights,
-  processedTranscripts,
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -63,35 +57,7 @@ export const GenerateInsight: React.FC<prop> = ({
   }, [userCredits]);
 
   const handleTransaction = async () => {
-    if (userCredits < INSIGHT_GENERATION_COST) {
-      await directToPurchase();
-    } else await generateInsight();
-  };
-
-  const generateInsight = async () => {
-    setLoading(true);
-
-    // TODO: handle error
-    if (processedTranscripts === null || processedTranscripts.length === 0) {
-      setLoading(false);
-      return null;
-    }
-
-    try {
-      const insightText = await generateInsightFromTranscript(
-        processedTranscripts,
-        openaiKey || "",
-        inputFields
-      );
-      await supabase.uploadInsight(meeting!, user.id, insightText);
-      await supabase.addCredit(user, userCredits, -INSIGHT_GENERATION_COST);
-      await fetchInsights();
-    } catch (error) {
-      console.log(error);
-    }
-
-    setLoading(false);
-    setOpen(false);
+    await directToPurchase();
   };
 
   const directToPurchase = async () => {
@@ -108,6 +74,31 @@ export const GenerateInsight: React.FC<prop> = ({
     }
   };
 
+  const handleSubmit = async (e: any) => {
+    setLoading(true);
+    let formData = new FormData();
+    formData.append("inputFields", JSON.stringify(inputFields));
+    formData.append("meeting", JSON.stringify(meeting));
+    formData.append("user", JSON.stringify(user));
+    formData.append("userCredits", JSON.stringify(userCredits));
+    formData.append(
+      "insightGenerationCost",
+      JSON.stringify(INSIGHT_GENERATION_COST)
+    );
+
+    await fetch(
+      `/dashboard/guilds/${meeting!.guildId}/meetings/${meeting!.channelId}-${
+        meeting!.id
+      }`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+    setLoading(false);
+    await fetchInsights();
+    setOpen(false);
+  };
   return (
     <>
       <button
@@ -175,23 +166,36 @@ export const GenerateInsight: React.FC<prop> = ({
                     </div>
                   </div>
                   <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                    <button
-                      type="button"
-                      className="inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 sm:ml-3 sm:w-auto"
-                      onClick={handleTransaction}
-                    >
-                      {userCredits < INSIGHT_GENERATION_COST ? (
+                    {userCredits < INSIGHT_GENERATION_COST ? (
+                      <button
+                        type="button"
+                        className="inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 sm:ml-3 sm:w-auto"
+                        onClick={handleTransaction}
+                      >
                         <span>Purchase Credits </span>
-                      ) : (
-                        <>
-                          {loading ? (
+                      </button>
+                    ) : (
+                      <>
+                        {loading ? (
+                          <button
+                            type="button"
+                            disabled
+                            className="inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 sm:ml-3 sm:w-auto"
+                          >
                             <span>Generating...</span>
-                          ) : (
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 sm:ml-3 sm:w-auto"
+                            onClick={handleSubmit}
+                          >
                             <span>Confirm</span>
-                          )}
-                        </>
-                      )}
-                    </button>
+                          </button>
+                        )}
+                      </>
+                    )}
+
                     <button
                       type="button"
                       className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"

@@ -4,9 +4,9 @@ import {
   useRouteParam,
 } from "~/utils/hooks";
 import { getProcessedTranscripts, type Meeting } from "~/utils/db";
-import type { LoaderFunction } from "@remix-run/node";
+import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
+import { Link, useActionData, useLoaderData } from "@remix-run/react";
 import { GenerateInsight } from "~/components/insight/transactionModal";
 import type { DiscordUser } from "~/auth.server";
 import { DocumentTextIcon } from "@heroicons/react/24/outline";
@@ -16,32 +16,60 @@ import { createSupabaseClient } from "~/utils/supabase";
 import ReactMarkdown from "react-markdown";
 import * as NoMeetingAnimation from "~/assets/lottie/no-meeting.json";
 import { useLottie } from "lottie-react";
+import { generateInsightFromTranscript } from "~/utils/ai";
 
-export const loader: LoaderFunction = async ({ request }) => {
-  const match = request.url.split("/");
+export const loader: LoaderFunction = () => {
+  return json({
+    openai_key: process.env.OPENAI_API_KEY,
+    supabaseKey: process.env.SUPABASE_KEY,
+  });
+};
 
-  const guildId = match[5];
-  const channelId = match[7].split("-")[0];
-  const meetingId = match[7].split("-")[1];
+export const action: ActionFunction = async ({ request }) => {
+  const supabase = createSupabaseClient(process.env.SUPABASE_KEY!);
+  const data = await request.formData();
+
+  const inputFields = JSON.parse(data.get("inputFields")?.toString() || "[]");
+  const meeting = JSON.parse(data.get("meeting")?.toString() || "{}");
+  const user = JSON.parse(data.get("user")?.toString() || "{}");
+  const userCredits = JSON.parse(data.get("userCredits")?.toString() || "0");
+  const INSIGHT_GENERATION_COST = JSON.parse(
+    data.get("insightGenerationCost")?.toString() || "0"
+  );
 
   const processedTranscripts = await getProcessedTranscripts(
-    guildId,
-    channelId,
-    meetingId,
+    meeting!.guildId,
+    meeting!.channelId,
+    meeting!.id,
     process.env.S3_BUCKET_REGION!,
     process.env.S3_BUCKET_NAME!
   );
 
-  return json({
-    openai_key: process.env.OPENAI_API_KEY,
-    supabaseKey: process.env.SUPABASE_KEY,
-    processedTranscripts,
-  });
+  // TODO: handle error
+  if (processedTranscripts === null || processedTranscripts.length === 0) {
+    return null;
+  }
+
+  try {
+    const insightText = "asdf";
+    await generateInsightFromTranscript(
+      processedTranscripts,
+      process.env.OPENAI_API_KEY || "",
+      inputFields
+    );
+
+    await supabase.uploadInsight(meeting!, user.id, insightText);
+    await supabase.addCredit(user, userCredits, -INSIGHT_GENERATION_COST);
+    return insightText;
+  } catch (error) {
+    console.log(error);
+  }
+  return null;
 };
 
 export default function MeetingPage() {
-  let { openai_key, supabaseKey, processedTranscripts } =
-    useLoaderData<typeof loader>();
+  let { supabaseKey } = useLoaderData<typeof loader>();
+  const action = useActionData<string | null>();
 
   const meetings =
     useRouteData<Meeting[]>("routes/dashboard.guilds.$guild") || [];
@@ -66,7 +94,7 @@ export default function MeetingPage() {
 
   useInsightArrayEffect(() => {
     fetchInsights();
-  }, [insights, thisMeeting!.id]);
+  }, [insights, thisMeeting!.id, action]);
 
   return (
     <div className="p-10 min-h-screen whitespace-pre-line  max-w-4xl">
@@ -76,10 +104,8 @@ export default function MeetingPage() {
           <GenerateInsight
             meeting={thisMeeting}
             supabaseKey={supabaseKey}
-            openaiKey={openai_key}
             user={user!}
             fetchInsights={fetchInsights}
-            processedTranscripts={processedTranscripts}
           />
         </span>
         <span className="ml-3">

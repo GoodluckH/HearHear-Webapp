@@ -52,9 +52,12 @@ function insightArrayEqual(
   a1: Insight[],
   a2: Insight[],
   meetingId1: string,
-  meetingId2: string
+  meetingId2: string,
+  insightText1?: string | null | undefined,
+  insightText2?: string | null | undefined
 ) {
   if (meetingId1 !== meetingId2) return false;
+  if (insightText1 !== insightText2) return false;
   if (a1.length !== a2.length) return false;
   for (let i = 0; i < a1.length; i++) {
     if (a1[i].id !== a2[i].id) return false;
@@ -63,11 +66,20 @@ function insightArrayEqual(
 }
 export const useInsightArrayEffect = (
   cb: () => MaybeCleanUpFn,
-  deps: [Insight[], string]
+  deps: [Insight[], string, string | undefined | null]
 ) => {
-  const ref = useRef<[Insight[], string]>(deps);
+  const ref = useRef<[Insight[], string, string | undefined | null]>(deps);
 
-  if (!insightArrayEqual(deps[0], ref.current[0], deps[1], ref.current[1])) {
+  if (
+    !insightArrayEqual(
+      deps[0],
+      ref.current[0],
+      deps[1],
+      ref.current[1],
+      deps[2],
+      ref.current[2]
+    )
+  ) {
     ref.current = deps;
   }
 

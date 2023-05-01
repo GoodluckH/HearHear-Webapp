@@ -45,7 +45,7 @@ export class MySupabaseClient {
             id: user.id,
             display_name: user.displayName,
             discriminator: user.discriminator,
-            credits: 10,
+            credits: 20,
           },
         ]);
       }

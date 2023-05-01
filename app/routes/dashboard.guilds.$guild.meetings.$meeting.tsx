@@ -51,8 +51,7 @@ export const action: ActionFunction = async ({ request }) => {
   }
 
   try {
-    const insightText = "asdf";
-    await generateInsightFromTranscript(
+    const insightText = await generateInsightFromTranscript(
       processedTranscripts,
       process.env.OPENAI_API_KEY || "",
       inputFields

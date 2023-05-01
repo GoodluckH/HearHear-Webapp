@@ -2,7 +2,7 @@ import InsightGenerationVideo from "~/assets/insight-generation.mp4";
 
 import {
   BoltIcon,
-  CheckBadgeIcon,
+  ShieldCheckIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 
@@ -56,17 +56,16 @@ export default function Features() {
             <div className="mt-10 flex">
               <div className="flex-shrink-0">
                 <div className="flex items-center justify-center h-12 w-12 rounded-md bg-sky-500 text-white">
-                  <CheckBadgeIcon className="w-6 h-6" />
+                  <ShieldCheckIcon className="w-6 h-6" />
                 </div>
               </div>
               <div className="ml-4">
                 <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  Easy to Use
+                  First Class Security
                 </h3>
                 <p className="mt-2 text-base text-gray-500">
-                  HearHear is a Discord bot, making it easy to integrate into
-                  your existing workflow. Simply add the bot to your server and
-                  start using it.
+                  HearHear is built with security in mind. We use industry
+                  standard security practices to ensure your data is safe.
                 </p>
               </div>
             </div>

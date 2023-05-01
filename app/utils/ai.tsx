@@ -1,9 +1,9 @@
-import type { Transcript } from "./db";
+import type { ProcessedTranscript, Transcript } from "./db";
 import { convertUNIXToString } from "./timestamp";
 import { Configuration, OpenAIApi } from "openai";
 
 export async function generateInsightFromTranscript(
-  transcripts: Transcript[],
+  processedTranscripts: ProcessedTranscript[],
   key: string,
   sections: string[]
 ) {
@@ -14,7 +14,7 @@ export async function generateInsightFromTranscript(
 
   const openai = new OpenAIApi(configuration);
 
-  const processedTranscripts = processTranscripts(transcripts);
+  // const processedTranscripts = processTranscripts(transcripts);
   processedTranscripts
     .sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
     .forEach((transcript) => {
@@ -52,7 +52,7 @@ export async function generateInsightFromTranscript(
 //   );
 // }
 
-function processTranscripts(transcripts: Transcript[]) {
+export function processTranscripts(transcripts: Transcript[]) {
   return transcripts.map((transcript) => ({
     username: transcript.filename.split("-")[1].split(".")[0],
     timestamp: transcript.filename.split("-")[0],

@@ -136,8 +136,6 @@ export class MySupabaseClient {
   }
 
   public async getInsights(meetingId: string) {
-    console.log(meetingId);
-
     const { data, error } = await this.supabase
       .from("insights")
       .select("*, user_id::text, meeting_id::text")
@@ -146,7 +144,6 @@ export class MySupabaseClient {
     if (error) {
       throw new Error(error.message);
     }
-    console.log(data);
 
     if (data && data.length > 0) {
       const insights: Insight[] = [];

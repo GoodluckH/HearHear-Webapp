@@ -129,7 +129,7 @@ export default function GuildPage() {
                                         <div className="h-2 w-2 rounded-full bg-gray-500"></div>
                                         <NavLink
                                           prefetch="intent"
-                                          to={`/dashboard/guilds/${guildId}/meetings/${meeting.id}`}
+                                          to={`/dashboard/guilds/${guildId}/meetings/${meeting.channelId}-${meeting.id}`}
                                           className="flex items-center justify-between w-full"
                                           onClick={() =>
                                             setSelectedMeetingId(meeting.id)

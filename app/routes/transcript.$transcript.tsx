@@ -1,4 +1,4 @@
-import { redirect, type LoaderFunction } from "@remix-run/node";
+import { type LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { useState } from "react";
 import type { Transcript } from "~/utils/db";
@@ -38,7 +38,9 @@ export let loader: LoaderFunction = async ({ request }) => {
 export default function TranscriptPage() {
   const authorization = useLoaderData<string | null>();
   const transcripts = useLoaderData<Transcript[] | null>();
-  const [currentAudio, setCurrentAudio] = useState("");
+  const [currentTranscriptId, setCurrentTranscriptId] = useState<number | null>(
+    null
+  );
 
   if (authorization === "Unauthorized") {
     return (
@@ -58,9 +60,29 @@ export default function TranscriptPage() {
     );
   }
 
-  function handleClick(transcript: Transcript) {
-    setCurrentAudio(transcript.audio_link);
-  }
+  // async function handleClick(transcript: Transcript, id: number) {
+  //   setCurrentTranscriptId(id);
+  //   console.log(transcript.audio);
+  //   const bytes = await Promise.resolve(transcript.audio);
+  //   const context = new window.AudioContext();
+
+  //   function playByteArray(bytes: Uint8Array | null) {
+  //     if (bytes === null) return;
+  //     var buffer = new Uint8Array(bytes.length);
+  //     buffer.set(new Uint8Array(bytes), 0);
+
+  //     const context = new AudioContext();
+  //     context.decodeAudioData(buffer.buffer, play);
+  //   }
+
+  //   function play(audioBuffer: any) {
+  //     var source = context.createBufferSource();
+  //     source.buffer = audioBuffer;
+  //     source.connect(context.destination);
+  //     source.start(0);
+  //   }
+  //   playByteArray(bytes);
+  // }
 
   return (
     <div className="mt-5 p-5 mx-auto">
@@ -72,7 +94,7 @@ export default function TranscriptPage() {
         .map((transcript, id) => (
           <div key={id} className="border-b py-4">
             {/* Render audio player */}
-            {currentAudio === transcript.audio_link && (
+            {/* {currentAudio === transcript.audio_link && (
               <audio
                 className="hidden"
                 autoPlay
@@ -80,14 +102,14 @@ export default function TranscriptPage() {
                 onEnded={() => setCurrentAudio("")}
                 src={transcript.audio_link}
               ></audio>
-            )}
+            )} */}
             <h2 className="text-xl font-semibold mb-0 flex items-center">
               {transcript.filename.split("-")[1].slice(0, -4)} -{" "}
               {convertUNIXToString(
                 transcript.filename.split("-")[0]!,
                 "%I:%M:%S %p"
               )}
-              {currentAudio === transcript.audio_link && (
+              {currentTranscriptId === id && (
                 <span className="ml-3">
                   <SpeakerWaveIcon className="text-gray-500 stroke-2 h-5 w-5" />
                 </span>
@@ -96,7 +118,7 @@ export default function TranscriptPage() {
             {/* Add onClick event handler to transcript text */}
             <div
               className="p-4 mb-5 text-gray-600 text-lg cursor-pointer hover:border-gray-200 hover:border hover:rounded-lg hover:shadow-lg"
-              onClick={() => handleClick(transcript)}
+              // onClick={() => handleClick(transcript, id)}
             >
               {transcript.text}
             </div>

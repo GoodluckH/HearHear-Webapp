@@ -3,7 +3,8 @@ import {
   useRouteData,
   useRouteParam,
 } from "~/utils/hooks";
-import type { Meeting } from "~/utils/db";
+import { getProcessedTranscripts, type Meeting } from "~/utils/db";
+import type { LoaderFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
 import { GenerateInsight } from "~/components/insight/transactionModal";
@@ -16,32 +17,39 @@ import ReactMarkdown from "react-markdown";
 import * as NoMeetingAnimation from "~/assets/lottie/no-meeting.json";
 import { useLottie } from "lottie-react";
 
-export async function loader() {
+export const loader: LoaderFunction = async ({ request }) => {
+  const match = request.url.split("/");
+
+  const guildId = match[5];
+  const channelId = match[7].split("-")[0];
+  const meetingId = match[7].split("-")[1];
+
+  const processedTranscripts = await getProcessedTranscripts(
+    guildId,
+    channelId,
+    meetingId,
+    process.env.S3_BUCKET_REGION!,
+    process.env.S3_BUCKET_NAME!
+  );
+
   return json({
     openai_key: process.env.OPENAI_API_KEY,
     supabaseKey: process.env.SUPABASE_KEY,
-    S3_BUCKET_REGION: process.env.S3_BUCKET_REGION,
-    S3_BUCKET_NAME: process.env.S3_BUCKET_NAME,
-    AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
-    AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
+    processedTranscripts,
   });
-}
+};
 
 export default function MeetingPage() {
-  let {
-    openai_key,
-    supabaseKey,
-    S3_BUCKET_REGION,
-    S3_BUCKET_NAME,
-    AWS_ACCESS_KEY_ID,
-    AWS_SECRET_ACCESS_KEY,
-  } = useLoaderData<typeof loader>();
+  let { openai_key, supabaseKey, processedTranscripts } =
+    useLoaderData<typeof loader>();
 
   const meetings =
     useRouteData<Meeting[]>("routes/dashboard.guilds.$guild") || [];
 
   const user = useRouteData<{ user: DiscordUser }>("root")?.user;
-  const meetingId = useRouteParam<string>("routes/dashboard", "meeting");
+  const meetingId = useRouteParam<string>("routes/dashboard", "meeting")?.split(
+    "-"
+  )[1];
 
   const thisMeeting = meetings.find((meeting) => meeting.id === meetingId);
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -71,10 +79,7 @@ export default function MeetingPage() {
             openaiKey={openai_key}
             user={user!}
             fetchInsights={fetchInsights}
-            S3_BUCKET_REGION={S3_BUCKET_REGION!}
-            S3_BUCKET_NAME={S3_BUCKET_NAME!}
-            AWS_ACCESS_KEY_ID={AWS_ACCESS_KEY_ID!}
-            AWS_SECRET_ACCESS_KEY={AWS_SECRET_ACCESS_KEY!}
+            processedTranscripts={processedTranscripts}
           />
         </span>
         <span className="ml-3">

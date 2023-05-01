@@ -1,7 +1,8 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { BanknotesIcon, PlusIcon } from "@heroicons/react/24/outline";
-import { getTranscripts, type Meeting } from "~/utils/db";
+import type { ProcessedTranscript } from "~/utils/db";
+import { type Meeting } from "~/utils/db";
 import { generateInsightFromTranscript } from "~/utils/ai";
 import { createSupabaseClient } from "~/utils/supabase";
 import type { DiscordUser } from "~/auth.server";
@@ -13,10 +14,7 @@ type prop = {
   user: DiscordUser;
   fetchInsights: () => void;
   openaiKey: string | undefined;
-  S3_BUCKET_REGION: string;
-  S3_BUCKET_NAME: string;
-  AWS_ACCESS_KEY_ID: string;
-  AWS_SECRET_ACCESS_KEY: string;
+  processedTranscripts: ProcessedTranscript[];
 };
 
 const INSIGHT_GENERATION_COST = 5;
@@ -32,10 +30,7 @@ export const GenerateInsight: React.FC<prop> = ({
   openaiKey,
   user,
   fetchInsights,
-  S3_BUCKET_REGION,
-  S3_BUCKET_NAME,
-  AWS_ACCESS_KEY_ID,
-  AWS_SECRET_ACCESS_KEY,
+  processedTranscripts,
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -75,25 +70,16 @@ export const GenerateInsight: React.FC<prop> = ({
 
   const generateInsight = async () => {
     setLoading(true);
-    const transcripts = await getTranscripts(
-      meeting!.guildId,
-      meeting!.channelId,
-      meeting!.id,
-      S3_BUCKET_REGION,
-      S3_BUCKET_NAME,
-      AWS_ACCESS_KEY_ID,
-      AWS_SECRET_ACCESS_KEY
-    );
 
     // TODO: handle error
-    if (transcripts === null || transcripts.length === 0) {
+    if (processedTranscripts === null || processedTranscripts.length === 0) {
       setLoading(false);
       return null;
     }
 
     try {
       const insightText = await generateInsightFromTranscript(
-        transcripts,
+        processedTranscripts,
         openaiKey || "",
         inputFields
       );

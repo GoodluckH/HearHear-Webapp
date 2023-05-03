@@ -17,7 +17,7 @@ export default function Login() {
       <div className="">
         <Form action="/auth/discord" method="post">
           <button className="bg-black hover:bg-gray-800 text-white font-bold py-4 px-4 rounded mt-5 border-white border-2">
-            ✨ this button away ✨
+            ✨ get started ✨
           </button>
         </Form>
       </div>

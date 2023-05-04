@@ -13,7 +13,7 @@ type prop = {
   fetchInsights: () => void;
 };
 
-const INSIGHT_GENERATION_COST = 5;
+const INSIGHT_GENERATION_COST = 0;
 
 const preBuiltTemplates: Record<number, string[]> = {
   0: ["Subject", "Summary", "Action Items (by participants)"],
@@ -232,7 +232,9 @@ const HasEnoughCredits: React.FC<HasEnoughCreditsProp> = ({ userCredits }) => {
       <div className="flex justify-between">
         <p className="text-sm text-sky-800 font-bold">Cost:</p>
         <p className="text-sm text-sky-800 font-bold">
-          {INSIGHT_GENERATION_COST} credits
+          {INSIGHT_GENERATION_COST === 0
+            ? "free"
+            : `${INSIGHT_GENERATION_COST} credits`}
         </p>
       </div>
       <div className="border-t my-2"></div>

@@ -23,9 +23,31 @@ export async function generateInsightFromTranscript(
     });
 
   try {
+    // 4 characters -> 1 token
+
+    const chunkedTranscripts: Array<ProcessedTranscript[]> = [[]];
+    let i = 0;
+    // 1000 tokens per request
+
+    let currentTokens = 0;
+    for (let j = 0; j < processedTranscripts.length; j += 1) {
+      if (
+        JSON.stringify(processedTranscripts[j]).length / 4 + currentTokens <=
+        1000
+      ) {
+        currentTokens += JSON.stringify(processedTranscripts[j]).length / 4;
+        chunkedTranscripts[i].push(processedTranscripts[j]);
+      } else {
+        i += 1;
+        chunkedTranscripts[i] = [];
+        currentTokens = 0;
+        j -= 1;
+      }
+    }
+
     const res = await openai.createCompletion({
       model: "text-davinci-003",
-      prompt: buildPrompt(sections) + JSON.stringify(processedTranscripts),
+      prompt: buildPrompt(sections) + JSON.stringify(chunkedTranscripts[0]),
       temperature: 0.1,
       max_tokens: 1000,
     });
@@ -37,6 +59,21 @@ export async function generateInsightFromTranscript(
       searchRegExp,
       replaceWith
     );
+
+    if (chunkedTranscripts.length > 1) {
+      for (let i = 1; i < chunkedTranscripts.length; i += 1) {
+        const res = await openai.createCompletion({
+          model: "text-davinci-003",
+          prompt: buildContinueInsightPrompt(styledText, chunkedTranscripts[i]),
+          temperature: 0.1,
+          max_tokens: 1000,
+        });
+        styledText = res.data.choices[0].text!.replace(
+          searchRegExp,
+          replaceWith
+        );
+      }
+    }
 
     return styledText;
   } catch (err) {
@@ -63,6 +100,9 @@ export function processTranscripts(transcripts: Transcript[]) {
 const BASE_PROMPT =
   "Given the following transcript, please provide an insight into the meeting. And format your response with proper line-breaks in markdown format. Only have the following headers (do no include parenthesis) in the memo. Use bullet points and the username field provided in json whenever appropriate. Make all headers with ##. DO NOT MAKE UP ANYTHING ELSE \n\n";
 
+const CONTINUE_PROMPT =
+  "Given the generated insight and additional transcripts, please modify, refine the content of each section of the generated insight accordingly. You must output the new insight with the same styling and headers. DO NOT MAKE UP ANYTHING ELSE \n\n";
+
 function buildPrompt(sections: string[]) {
   let prompt = BASE_PROMPT;
   sections.forEach((section) => {
@@ -70,6 +110,20 @@ function buildPrompt(sections: string[]) {
   });
   prompt +=
     "\n\n\n Now here's the transcript in JSON format [{username, timestamp, text}]\n\n";
+
+  return prompt;
+}
+
+function buildContinueInsightPrompt(
+  generatedInsight: string,
+  transcripts: ProcessedTranscript[]
+) {
+  let prompt = CONTINUE_PROMPT;
+  prompt += "\n\n\n here's the existing insight\n\n";
+  prompt += generatedInsight;
+  prompt +=
+    "\n\n\n Now here's the transcript in JSON format [{username, timestamp, text}]\n\n";
+  prompt += JSON.stringify(transcripts);
 
   return prompt;
 }

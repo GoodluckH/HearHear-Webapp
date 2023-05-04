@@ -156,11 +156,22 @@ export const GenerateInsight: React.FC<prop> = ({
                         >
                           Insight Generation Confirmation
                         </Dialog.Title>
-                        <TemplateBuilder
-                          inputFields={inputFields}
-                          setInputFields={handleSetInputFields}
-                          preBuiltTemplates={preBuiltTemplates}
-                        />
+                        {loading ? (
+                          <div className="flex justify-center mt-3">
+                            <h2 className="text-sm font-bold leading-6 text-sky-700">
+                              If this is a long meeting, this may take a few
+                              minutes. Please do not close this window or
+                              refresh the page. But you can probably go get a
+                              coffee.
+                            </h2>
+                          </div>
+                        ) : (
+                          <TemplateBuilder
+                            inputFields={inputFields}
+                            setInputFields={handleSetInputFields}
+                            preBuiltTemplates={preBuiltTemplates}
+                          />
+                        )}
                         <HasEnoughCredits userCredits={userCredits} />
                       </div>
                     </div>

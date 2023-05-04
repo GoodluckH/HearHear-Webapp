@@ -77,7 +77,7 @@ export default function HowToUseBOT() {
                           </p>
                           <p className="text-sm text-gray-500 mb-5">
                             <code className="text-sm text-gray-800 px-3 py-[0.2rem] border border-gray-200 rounded-md">
-                              /leave
+                              /end
                             </code>{" "}
                             Use this command to make the bot leave the voice
                             channel and the bot will process the recordings.

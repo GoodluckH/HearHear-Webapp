@@ -105,7 +105,7 @@ export default function HowHearHearWorks() {
                   <p className="mt-2 text-base text-gray-500">
                     Type{" "}
                     <code className="text-black border-gray-500 border-2 rounded-md p-1">
-                      /leave
+                      /end
                     </code>{" "}
                     in any text channel. The bot will leave the voice channel
                     and process the recording. You can see the meeting details

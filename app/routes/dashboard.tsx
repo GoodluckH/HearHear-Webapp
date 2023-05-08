@@ -11,10 +11,11 @@ import { auth } from "~/auth.server";
 import { config } from "dotenv";
 import type { DiscordUser } from "~/auth.server";
 import { useRouteParam } from "~/utils/hooks";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import HowToUseBOT from "~/components/faq";
 import SelectedMeetingProvider from "~/context/selectedMeetingContext";
 import { ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
+import { Crisp } from "crisp-sdk-web";
 
 export interface BasicGuildInfo {
   id: string;
@@ -74,96 +75,101 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="flex bg-gray-50 overflow-hidden min-h-screen">
-      <nav className="w-64 bg-slate-100 border-r border-gray-200 h-screen flex flex-col">
-        <div className="px-6 pt-8">
-          <h1 className="text-xl font-bold mb-4">Dashboard</h1>
-          <h2 className="text-sm text-gray-600 mb-4">
-            Welcome {user.displayName}#{user.discriminator}
-          </h2>
-          <h2 className="text-md font-bold">Your Servers</h2>
-        </div>
-        <ul className="flex-grow text-sm text-gray-600 w-full">
-          {guilds.map((guild: BasicGuildInfo) => (
-            <NavLink
-              prefetch="intent"
-              to={`/dashboard/guilds/${guild.id}`}
-              key={guild.id}
-              onClick={() => handleClick(guild.id)}
-            >
-              <li
-                key={guild.id}
-                className={`flex items-center py-2 hover:bg-gray-200 ${
-                  selectedGuild === guild.id ? "bg-gray-200" : ""
-                }`}
-              >
-                {guild.icon === null ? (
-                  <img
-                    src="https://cdn.discordapp.com/embed/avatars/0.png"
-                    alt={guild.name}
-                    className=" ml-6 w-8 h-8 rounded-full mr-1"
-                  />
-                ) : (
-                  <img
-                    src={`https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`}
-                    alt={guild.name}
-                    className=" ml-6 w-8 h-8 rounded-full mr-1"
-                  />
-                )}
-
-                <span className="text-gray-700">{guild.name}</span>
-              </li>
-            </NavLink>
-          ))}
-        </ul>
-
-        <footer className="h-[3rem] flex items-center ">
-          <HowToUseBOT />
-        </footer>
-        <footer className="h-[3rem] flex items-center mb-10 ">
-          <p
-            className="text-gray-500 text-md mx-6 cursor-pointer"
-            onClick={() =>
-              window.open("https://discord.gg/mt2JMftH2r", "_blank")
-            }
-          >
-            ⚡ Instant Support
-          </p>
-        </footer>
-
-        <footer className="h-[4rem] bg-slate-800 flex justify-center items-center">
-          <img
-            src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`}
-            alt={user.displayName}
-            className="w-10 h-10 rounded-full mx-1"
-          />
-
-          <div className="flex flex-col ml-1">
-            <span className="text-gray-100 font-medium text-sm">
-              {user.displayName}
-            </span>
-            <span className="text-gray-400 text-sm">#{user.discriminator}</span>
+    <>
+      <div className="flex bg-gray-50 overflow-hidden min-h-screen">
+        <nav className="w-64 bg-slate-100 border-r border-gray-200 h-screen flex flex-col">
+          <div className="px-6 pt-8">
+            <h1 className="text-xl font-bold mb-4">Dashboard</h1>
+            <h2 className="text-sm text-gray-600 mb-4">
+              Welcome {user.displayName}#{user.discriminator}
+            </h2>
+            <h2 className="text-md font-bold">Your Servers</h2>
           </div>
+          <ul className="flex-grow text-sm text-gray-600 w-full">
+            {guilds.map((guild: BasicGuildInfo) => (
+              <NavLink
+                prefetch="intent"
+                to={`/dashboard/guilds/${guild.id}`}
+                key={guild.id}
+                onClick={() => handleClick(guild.id)}
+              >
+                <li
+                  key={guild.id}
+                  className={`flex items-center py-2 hover:bg-gray-200 ${
+                    selectedGuild === guild.id ? "bg-gray-200" : ""
+                  }`}
+                >
+                  {guild.icon === null ? (
+                    <img
+                      src="https://cdn.discordapp.com/embed/avatars/0.png"
+                      alt={guild.name}
+                      className=" ml-6 w-8 h-8 rounded-full mr-1"
+                    />
+                  ) : (
+                    <img
+                      src={`https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`}
+                      alt={guild.name}
+                      className=" ml-6 w-8 h-8 rounded-full mr-1"
+                    />
+                  )}
 
-          <Form action="/auth/discord/logout" method="post">
-            <button className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-2 rounded-full ml-8 mr-1">
-              <ArrowRightOnRectangleIcon className="w-6 h-6 text-black stroke-2" />
-            </button>
-          </Form>
-        </footer>
-      </nav>
-      <SelectedMeetingProvider>
-        <div className="flex-1 max-h-screen overflow-auto">
-          {navigation.state === "loading" &&
-          navigation.location.pathname.match(/^\/dashboard\/guilds\/\d+$/) !==
-            null ? (
-            <Skeleton />
-          ) : (
-            <Outlet />
-          )}
-        </div>
-      </SelectedMeetingProvider>
-    </div>
+                  <span className="text-gray-700">{guild.name}</span>
+                </li>
+              </NavLink>
+            ))}
+          </ul>
+
+          <footer className="h-[3rem] flex items-center ">
+            <HowToUseBOT />
+          </footer>
+          <footer className="h-[3rem] flex items-center mb-10 ">
+            <p
+              className="text-gray-500 text-md mx-6 cursor-pointer"
+              onClick={() =>
+                window.open("https://discord.gg/mt2JMftH2r", "_blank")
+              }
+            >
+              ⚡ Instant Support
+            </p>
+          </footer>
+
+          <footer className="h-[4rem] bg-slate-800 flex justify-center items-center">
+            <img
+              src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`}
+              alt={user.displayName}
+              className="w-10 h-10 rounded-full mx-1"
+            />
+
+            <div className="flex flex-col ml-1">
+              <span className="text-gray-100 font-medium text-sm">
+                {user.displayName}
+              </span>
+              <span className="text-gray-400 text-sm">
+                #{user.discriminator}
+              </span>
+            </div>
+
+            <Form action="/auth/discord/logout" method="post">
+              <button className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-2 rounded-full ml-8 mr-1">
+                <ArrowRightOnRectangleIcon className="w-6 h-6 text-black stroke-2" />
+              </button>
+            </Form>
+          </footer>
+        </nav>
+        <SelectedMeetingProvider>
+          <div className="flex-1 max-h-screen overflow-auto">
+            {navigation.state === "loading" &&
+            navigation.location.pathname.match(/^\/dashboard\/guilds\/\d+$/) !==
+              null ? (
+              <Skeleton />
+            ) : (
+              <Outlet />
+            )}
+          </div>
+        </SelectedMeetingProvider>
+      </div>
+      <CrispChat />
+    </>
   );
 }
 
@@ -214,4 +220,12 @@ function Skeleton() {
       </div>
     </div>
   );
+}
+
+function CrispChat() {
+  useEffect(() => {
+    Crisp.configure("5e3e4cdc-0b90-497d-b632-ef9df4a5786e");
+  }, []);
+
+  return null;
 }

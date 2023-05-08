@@ -236,8 +236,6 @@ export class MySupabaseClient {
         await this.supabase.from("guilds").insert({ id: meeting.guildId });
       }
 
-      console.log();
-
       const channelExist = await this.checkIfExists(
         "channels",
         "id",

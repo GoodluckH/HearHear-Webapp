@@ -45,9 +45,15 @@ export async function generateInsightFromTranscript(
       }
     }
 
-    const res = await openai.createCompletion({
-      model: "text-davinci-003",
-      prompt: buildPrompt(sections) + JSON.stringify(chunkedTranscripts[0]),
+    const res = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "user",
+          content:
+            buildPrompt(sections) + JSON.stringify(chunkedTranscripts[0]),
+        },
+      ],
       temperature: 0.1,
       max_tokens: 1000,
     });
@@ -55,20 +61,28 @@ export async function generateInsightFromTranscript(
     // replace all <h1 id='S&B*'>
     const searchRegExp = new RegExp("<h1 id='S&B*'>", "g");
     const replaceWith = "<h1 className='font-bold text-xl'>";
-    let styledText = res.data.choices[0].text!.replace(
+    let styledText = res.data.choices[0].message!.content.replace(
       searchRegExp,
       replaceWith
     );
 
     if (chunkedTranscripts.length > 1) {
       for (let i = 1; i < chunkedTranscripts.length; i += 1) {
-        const res = await openai.createCompletion({
-          model: "text-davinci-003",
-          prompt: buildContinueInsightPrompt(styledText, chunkedTranscripts[i]),
+        const res = await openai.createChatCompletion({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "user",
+              content: buildContinueInsightPrompt(
+                styledText,
+                chunkedTranscripts[i]
+              ),
+            },
+          ],
           temperature: 0.1,
           max_tokens: 1000,
         });
-        styledText = res.data.choices[0].text!.replace(
+        styledText = res.data.choices[0].message!.content.replace(
           searchRegExp,
           replaceWith
         );

@@ -117,8 +117,18 @@ export default function DashboardLayout() {
           ))}
         </ul>
 
-        <footer className="h-[3rem] flex items-center mb-10 ">
+        <footer className="h-[3rem] flex items-center ">
           <HowToUseBOT />
+        </footer>
+        <footer className="h-[3rem] flex items-center mb-10 ">
+          <p
+            className="text-gray-500 text-md mx-6 cursor-pointer"
+            onClick={() =>
+              window.open("https://discord.gg/mt2JMftH2r", "_blank")
+            }
+          >
+            ⚡ Instant Support
+          </p>
         </footer>
 
         <footer className="h-[4rem] bg-slate-800 flex justify-center items-center">

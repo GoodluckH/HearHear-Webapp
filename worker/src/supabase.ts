@@ -1,8 +1,5 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
-import type { DiscordUser } from "~/auth.server";
-import type { BasicGuildInfo } from "~/routes/dashboard";
-import { getProcessedTranscripts, type Meeting } from "./db";
 
 const supabaseUrl = "https://yjezghyuqbzwxoovnlwo.supabase.co";
 
@@ -29,30 +26,6 @@ export class MySupabaseClient {
     return this.supabase;
   }
 
-  /**
-   * Add a user to supabase. If the user does not exist in the database,
-   * create a new user with 10 credits. Otherwise, do nothing.
-   *
-   * @param user the user to login. Retrieved from the Discord auth
-   * strategy
-   */
-  public async loginUser(user: DiscordUser) {
-    try {
-      const userExist = await this.checkIfExists("users", "id", user.id);
-      if (!userExist) {
-        await this.supabase.from("users").insert({
-          id: user.id,
-          display_name: user.displayName,
-          discriminator: user.discriminator,
-          credits: 500,
-        });
-      }
-    } catch (e) {
-      console.log(e);
-      throw e;
-    }
-  }
-
   public async logErrorMessage(message: string, meetingId: string) {
     await this.supabase.from("errors").insert({
       message,
@@ -60,115 +33,56 @@ export class MySupabaseClient {
     });
   }
 
-  /**
-   * Batch create guilds on supabase if they do not exist.
-   *
-   * @param userId the user id associated with the guilds
-   * @param guilds the guilds to add to the database
-   */
-  public async batchCreateGuilds(userId: string, guilds: BasicGuildInfo[]) {
-    console.log("inserting guilds");
-    const guildsError = (
-      await this.supabase.from("guilds").upsert(
-        guilds.map((guild) => ({
-          id: guild.id,
-          owner: guild.owner,
-        })),
-        { onConflict: "id", ignoreDuplicates: true }
-      )
-    ).error;
+  //   public async getUserCredits(user: DiscordUser) {
+  //     await this.loginUser(user);
 
-    console.log(guildsError);
+  //     const { data, error } = await this.supabase
+  //       .from("users")
+  //       .select("credits")
+  //       .eq("id", user.id);
 
-    if (guildsError) {
-      throw new Error(guildsError.message);
-    }
+  //     if (error) {
+  //       throw new Error(error.message);
+  //     }
 
-    console.log("inserting user-guild pairs");
-    const { error } = await this.supabase.from("user_guild").upsert(
-      guilds.map(
-        (guild) => ({
-          guild_id: guild.id,
-          user_id: userId,
-          hash: guild.id.concat(userId),
-        }),
-        { onConflict: "hash", ignoreDuplicates: true }
-      )
-    );
-    console.log(error);
+  //     if (data && data.length > 0) {
+  //       return data[0].credits;
+  //     }
 
-    if (error) {
-      throw new Error(error.message);
-    }
+  //     return -1;
+  //   }
 
-    console.log("done");
-  }
+  //   public async addCredit(
+  //     user: DiscordUser,
+  //     currentAmount: number,
+  //     amount: number
+  //   ) {
+  //     await this.loginUser(user);
 
-  public async getUserCredits(user: DiscordUser) {
-    await this.loginUser(user);
+  //     const { error } = await this.supabase
+  //       .from("users")
+  //       .update({ credits: currentAmount + amount })
+  //       .eq("id", user.id);
 
+  //     if (error) {
+  //       throw new Error(error.message);
+  //     }
+  //   }
+
+  public async getTranscript(meetingId: string) {
     const { data, error } = await this.supabase
-      .from("users")
-      .select("credits")
-      .eq("id", user.id);
-
+      .from("transcripts")
+      .select("*, meeting_id::text")
+      .eq("meeting_id", meetingId);
     if (error) {
       throw new Error(error.message);
     }
 
-    if (data && data.length > 0) {
-      return data[0].credits;
+    if (data !== null && data.length > 0) {
+      // @ts-ignore
+      return JSON.parse(data[0].transcript);
     }
-
-    return -1;
-  }
-
-  public async addCredit(
-    user: DiscordUser,
-    currentAmount: number,
-    amount: number
-  ) {
-    await this.loginUser(user);
-
-    const { error } = await this.supabase
-      .from("users")
-      .update({ credits: currentAmount + amount })
-      .eq("id", user.id);
-
-    if (error) {
-      throw new Error(error.message);
-    }
-  }
-
-  public async saveProcessedTranscripts(
-    guildId: string,
-    channelId: string,
-    meetingId: string,
-    S3_BUCKET_REGION: string,
-    S3_BUCKET_NAME: string
-  ) {
-    const exist = await this.checkIfExists(
-      "transcripts",
-      "meeting_id",
-      meetingId
-    );
-
-    if (!exist) {
-      const processedTranscripts = await getProcessedTranscripts(
-        guildId,
-        channelId,
-        meetingId,
-        S3_BUCKET_REGION,
-        S3_BUCKET_NAME
-      );
-      const { error } = await this.supabase.from("transcripts").insert({
-        meeting_id: meetingId,
-        transcript: processedTranscripts,
-      });
-      if (error) {
-        throw new Error(error.message);
-      }
-    }
+    return [];
   }
 
   public async getInsights(meetingId: string) {
@@ -257,21 +171,36 @@ export class MySupabaseClient {
   //   }
   // }
 
-  public async uploadInsight(
-    meeting: Meeting,
+  public async updateInsightStatus(
+    meetingId: string,
     userId: string,
-    insghtText: string
+    insightText: string,
+    status: string
+  ) {
+    const { error } = await this.supabase
+      .from("insights")
+      .update({ status, insight_text: insightText })
+      .eq("meeting_id", meetingId)
+      .eq("user_id", userId);
+
+    if (error) {
+      console.log("error updating insight status:", error);
+      throw new Error(error.message);
+    }
+  }
+
+  public async createInsight(
+    guildId: string,
+    channelId: string,
+    meetingId: string,
+    userId: string
   ) {
     try {
-      const guildExist = await this.checkIfExists(
-        "guilds",
-        "id",
-        meeting.guildId
-      );
+      const guildExist = await this.checkIfExists("guilds", "id", guildId);
 
       if (!guildExist) {
         try {
-          await this.supabase.from("guilds").insert({ id: meeting.guildId });
+          await this.supabase.from("guilds").insert({ id: guildId });
         } catch (e) {
           console.log("guild insert error:", e);
         }
@@ -280,14 +209,14 @@ export class MySupabaseClient {
       const channelExist = await this.checkIfExists(
         "channels",
         "id",
-        meeting.channelId
+        channelId
       );
 
       if (!channelExist) {
         try {
           await this.supabase
             .from("channels")
-            .insert({ id: meeting.channelId, guild_id: meeting.guildId });
+            .insert({ id: channelId, guild_id: guildId });
         } catch (e) {
           console.log("channel insert error:", e);
         }
@@ -296,14 +225,14 @@ export class MySupabaseClient {
       const meetingExist = await this.checkIfExists(
         "meetings",
         "id",
-        meeting.id
+        meetingId
       );
       if (!meetingExist) {
         try {
           await this.supabase.from("meetings").insert({
-            id: meeting.id,
-            channel_id: meeting.channelId,
-            guild_id: meeting.guildId,
+            id: meetingId,
+            channel_id: channelId,
+            guild_id: guildId,
           });
         } catch (e) {
           console.log("meeting insert error:", e);
@@ -311,9 +240,9 @@ export class MySupabaseClient {
       }
 
       const { error } = await this.supabase.from("insights").insert({
-        meeting_id: meeting.id,
+        meeting_id: meetingId,
         user_id: userId,
-        insight_text: insghtText,
+        status: "pending",
       });
       console.log(error);
 

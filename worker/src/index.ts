@@ -3,6 +3,10 @@ import {
   ListObjectsV2Command,
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
+
+import { createSupabaseClient } from "./supabase";
+import { generateInsightFromTranscript } from "./openai";
+
 /**
  * Welcome to Cloudflare Workers! This is your first worker.
  *
@@ -18,6 +22,8 @@ export interface Env {
   AWS_SECRET_ACCESS_KEY: string;
   S3_BUCKET_NAME: string;
   S3_BUCKET_REGION: string;
+  SUPABASE_KEY: string;
+  OPENAI_API_KEY: string;
 }
 
 export default {
@@ -32,6 +38,10 @@ export default {
       return handleGetParticipantsForMeeting(data, env);
     }
 
+    if (data.requestType === "generateInsightForMeeting") {
+      return handleGenerateInsightForMeeting(data, env);
+    }
+
     if (data.requestType === "getTranscriptForMeeting") {
       return handleGetTranscriptForMeeting(data, env);
     }
@@ -41,6 +51,63 @@ export default {
     });
   },
 };
+export interface Transcript {
+  filename: string;
+  audio: Promise<Uint8Array> | null;
+  text: string;
+}
+
+export interface ProcessedTranscript {
+  username: string;
+  timestamp: string;
+  text: string;
+}
+
+async function handleGenerateInsightForMeeting(data: any, env: Env) {
+  const supabase = createSupabaseClient(env.SUPABASE_KEY);
+  await supabase.createInsight(
+    data.guildId,
+    data.channelId,
+    data.meetingId,
+    data.userId
+  );
+  try {
+    const processedTranscripts = await supabase.getTranscript(data.meetingId);
+
+    console.log("processed transcripts", processedTranscripts);
+
+    if (processedTranscripts === null || processedTranscripts.length === 0) {
+      await supabase.logErrorMessage("No transcripts found", data.meetingId);
+      return new Response("No transcripts found or error fetching transcripts");
+    }
+
+    const insightText = await generateInsightFromTranscript(
+      processedTranscripts,
+      env.OPENAI_API_KEY,
+      data.inputFields,
+      supabase,
+      data.meetingId
+    );
+    console.log(insightText);
+
+    await supabase.updateInsightStatus(
+      data.meetingId,
+      data.userId,
+      insightText,
+      "complete"
+    );
+
+    // await supabase.addCredit(
+    //   ,
+    //   Number(userCredits),
+    //   -Number(INSIGHT_GENERATION_COST)
+    // );
+    return new Response("OK");
+  } catch (e) {
+    await supabase.logErrorMessage("error " + e, data.meetingId);
+    return new Response("error getting processed transcripts");
+  }
+}
 
 async function handleGetTranscriptForMeeting(data: any, env: Env) {
   const transcripts = await getTranscriptForMeeting(
@@ -169,6 +236,7 @@ async function getTranscriptForMeeting(
 
     const transcriptFilePaths = contents.filter((c) => c.endsWith(".ogg"));
     const result: Array<{ filename: string; data: Uint8Array }> = [];
+
     await Promise.all(
       transcriptFilePaths.map(async (transcriptPath) => {
         const byteArray = await getRecordingFileAsByteArray(

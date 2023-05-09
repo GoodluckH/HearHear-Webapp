@@ -3,20 +3,19 @@ import {
   useRouteData,
   useRouteParam,
 } from "~/utils/hooks";
-import { getProcessedTranscripts, type Meeting } from "~/utils/db";
+import { type Meeting } from "~/utils/db";
 import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Link, useActionData, useLoaderData } from "@remix-run/react";
 import { GenerateInsight } from "~/components/insight/transactionModal";
 import type { DiscordUser } from "~/auth.server";
 import { DocumentTextIcon } from "@heroicons/react/24/outline";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Insight } from "~/utils/supabase";
 import { createSupabaseClient } from "~/utils/supabase";
 import ReactMarkdown from "react-markdown";
 import * as NoMeetingAnimation from "~/assets/lottie/no-meeting.json";
 import { useLottie } from "lottie-react";
-import { generateInsightFromTranscript } from "~/utils/ai";
 import { Participants } from "~/components/participants";
 
 export const loader: LoaderFunction = () => {
@@ -30,47 +29,74 @@ export const action: ActionFunction = async ({ request }) => {
   const supabase = createSupabaseClient(process.env.SUPABASE_KEY!);
   const data = await request.formData();
 
+  const requestType = JSON.parse(data.get("requestType")?.toString() || "");
   const inputFields = JSON.parse(data.get("inputFields")?.toString() || "[]");
-  const meeting = JSON.parse(data.get("meeting")?.toString() || "{}");
-  const user = JSON.parse(data.get("user")?.toString() || "{}");
-  const userCredits = JSON.parse(data.get("userCredits")?.toString() || "0");
-  const INSIGHT_GENERATION_COST = JSON.parse(
-    data.get("insightGenerationCost")?.toString() || "0"
-  );
+  const guildId = JSON.parse(data.get("guildId")?.toString() || "{}");
+  const channelId = JSON.parse(data.get("channelId")?.toString() || "{}");
+  const meetingId = JSON.parse(data.get("meetingId")?.toString() || "{}");
+  const userId = JSON.parse(data.get("userId")?.toString() || "{}");
+  // const userCredits = JSON.parse(data.get("userCredits")?.toString() || "0");
+  // const INSIGHT_GENERATION_COST = JSON.parse(
+  //   data.get("insightGenerationCost")?.toString() || "0"
+  // );
 
-  const processedTranscripts = await getProcessedTranscripts(
-    meeting!.guildId,
-    meeting!.channelId,
-    meeting!.id,
+  console.log(requestType, inputFields, guildId, channelId, meetingId, userId);
+
+  await supabase.saveProcessedTranscripts(
+    guildId,
+    channelId,
+    meetingId,
     process.env.S3_BUCKET_REGION!,
     process.env.S3_BUCKET_NAME!
   );
-  console.log(processedTranscripts);
 
-  // TODO: handle error
-  if (processedTranscripts === null || processedTranscripts.length === 0) {
-    return null;
-  }
+  console.log("saved processed transcripts");
 
-  try {
-    const insightText = await generateInsightFromTranscript(
-      processedTranscripts,
-      process.env.OPENAI_API_KEY || "",
-      inputFields
-    );
-    console.log(insightText);
+  fetch("https://worker.xipu-li5458.workers.dev", {
+    method: "POST",
+    body: JSON.stringify({
+      requestType,
+      inputFields,
+      guildId,
+      channelId,
+      meetingId,
+      userId,
+    }),
+  }).catch((err) => console.log(err));
 
-    await supabase.uploadInsight(meeting!, user.id, insightText);
-    await supabase.addCredit(
-      user,
-      Number(userCredits),
-      -Number(INSIGHT_GENERATION_COST)
-    );
-    return insightText;
-  } catch (error) {
-    console.log(error);
-    await supabase.logErrorMessage(String(error), meeting.id);
-  }
+  // const processedTranscripts = await getProcessedTranscripts(
+  //   meeting!.guildId,
+  //   meeting!.channelId,
+  //   meeting!.id,
+  //   process.env.S3_BUCKET_REGION!,
+  //   process.env.S3_BUCKET_NAME!
+  // );
+  // console.log(processedTranscripts);
+
+  // // TODO: handle error
+  // if (processedTranscripts === null || processedTranscripts.length === 0) {
+  //   return null;
+  // }
+
+  // try {
+  //   const insightText = await generateInsightFromTranscript(
+  //     processedTranscripts,
+  //     process.env.OPENAI_API_KEY || "",
+  //     inputFields
+  //   );
+  //   console.log(insightText);
+
+  //   await supabase.uploadInsight(meeting!, user.id, insightText);
+  //   await supabase.addCredit(
+  //     user,
+  //     Number(userCredits),
+  //     -Number(INSIGHT_GENERATION_COST)
+  //   );
+  //   return insightText;
+  // } catch (error) {
+  //   console.log(error);
+  //   await supabase.logErrorMessage(String(error), meeting.id);
+  // }
   return null;
 };
 
@@ -89,15 +115,54 @@ export default function MeetingPage() {
   const thisMeeting = meetings.find((meeting) => meeting.id === meetingId);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loadingInsights, setLoadingInsights] = useState<boolean>(false);
+  const [pendingJob, setPendingJob] = useState<boolean>(false);
+
+  const supabase = createSupabaseClient(supabaseKey!);
+  const supabaseClient = supabase.getClient();
 
   const fetchInsights = async () => {
     setLoadingInsights(true);
-    const supabase = createSupabaseClient(supabaseKey!);
     const retrievedInsights = await supabase.getInsights(thisMeeting!.id);
 
     setInsights(retrievedInsights);
     setLoadingInsights(false);
   };
+
+  useEffect(() => {
+    const channel = supabaseClient
+      .channel(`insights`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "insights",
+          filter: `meeting_id=eq.${meetingId}`,
+        },
+        () => {
+          fetchInsights();
+          setPendingJob(false);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "insights",
+          filter: `meeting_id=eq.${meetingId}`,
+        },
+        () => {
+          setPendingJob(true);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (channel.state === "joined") supabaseClient.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabaseClient]);
 
   useInsightArrayEffect(() => {
     fetchInsights();
@@ -126,7 +191,10 @@ export default function MeetingPage() {
           </div>
         </span>
       </h1>
-
+      <p className="text-red-500 text-sm mt-2">
+        {pendingJob &&
+          "generating insight...do not refresh page or close this window"}
+      </p>
       <div className="mt-10">
         <Participants meeting={thisMeeting!} />
         {/* <h1 className="text-xl font-bold">Participants</h1>

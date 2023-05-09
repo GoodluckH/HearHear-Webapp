@@ -77,9 +77,13 @@ export const GenerateInsight: React.FC<prop> = ({
   const handleSubmit = async (e: any) => {
     setLoading(true);
     let formData = new FormData();
+
+    formData.append("requestType", JSON.stringify("generateInsightForMeeting"));
     formData.append("inputFields", JSON.stringify(inputFields));
-    formData.append("meeting", JSON.stringify(meeting));
-    formData.append("user", JSON.stringify(user));
+    formData.append("guildId", JSON.stringify(meeting!.guildId));
+    formData.append("channelId", JSON.stringify(meeting!.channelId));
+    formData.append("meetingId", JSON.stringify(meeting!.id));
+    formData.append("userId", JSON.stringify(user.id));
     formData.append("userCredits", JSON.stringify(userCredits));
     formData.append(
       "insightGenerationCost",
@@ -96,7 +100,7 @@ export const GenerateInsight: React.FC<prop> = ({
       }
     );
     setLoading(false);
-    await fetchInsights();
+    // await fetchInsights();
     setOpen(false);
   };
   return (

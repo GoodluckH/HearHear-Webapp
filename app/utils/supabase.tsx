@@ -292,8 +292,6 @@ export class MySupabaseClient {
     columnToCheck: string,
     value: string
   ) {
-    console.log("here checking if user exists");
-
     const { data, error } = await this.supabase
       .from(tableName)
       .select("*")

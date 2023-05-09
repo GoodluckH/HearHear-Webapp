@@ -17,6 +17,7 @@ import ReactMarkdown from "react-markdown";
 import * as NoMeetingAnimation from "~/assets/lottie/no-meeting.json";
 import { useLottie } from "lottie-react";
 import { generateInsightFromTranscript } from "~/utils/ai";
+import { Participants } from "~/components/participants";
 
 export const loader: LoaderFunction = () => {
   return json({
@@ -126,12 +127,13 @@ export default function MeetingPage() {
       </h1>
 
       <div className="mt-10">
-        <h1 className="text-xl font-bold">Participants</h1>
+        <Participants meeting={thisMeeting!} />
+        {/* <h1 className="text-xl font-bold">Participants</h1>
         <ul className="list-disc ml-5">
           {thisMeeting!.participants.map((participant: string, id: any) => (
             <li key={id}>{participant.split("_")[0]}</li>
           ))}
-        </ul>
+        </ul> */}
         {/* separator line */}
         <div className="border-b-2 border-gray-200 "></div>
         <h1 className="text-xl font-bold mt-10">Insights</h1>

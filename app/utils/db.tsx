@@ -17,7 +17,7 @@ export interface Meeting {
   channelId: string; // the channel id
   startTime: string; // the start time of the meeting in UNIX timestamp
   endTime: string; // the end time of the meeting in UNIX timestamp,
-  participants: string[]; // the participants of the meeting
+  // participants: string[]; // the participants of the meeting
 }
 
 export interface Transcript {
@@ -309,7 +309,7 @@ export async function buildMeetings(files: string[]) {
     })
   );
   const endTimes: Record<string, number> = {};
-  const participants: Record<string, Set<string>> = {};
+  // const participants: Record<string, Set<string>> = {};
 
   text_files.map((file) => {
     const meetingId = file.split("/")[2];
@@ -318,10 +318,10 @@ export async function buildMeetings(files: string[]) {
     if (endTimes[meetingId] === undefined) endTimes[meetingId] = timestamp;
     if (timestamp > endTimes[meetingId]) endTimes[meetingId] = timestamp;
 
-    if (participants[meetingId] === undefined)
-      participants[meetingId] = new Set();
-    const participantId = filename.split("-")[1].slice(0, -4);
-    participants[meetingId].add(participantId);
+    // if (participants[meetingId] === undefined)
+    //   participants[meetingId] = new Set();
+    // const participantId = filename.split("-")[1].slice(0, -4);
+    // participants[meetingId].add(participantId);
     return null;
   });
 
@@ -336,7 +336,7 @@ export async function buildMeetings(files: string[]) {
       channelName,
       startTime: meetingId,
       endTime: endTimes[meetingId].toString(),
-      participants: Array.from(participants[meetingId]),
+      // participants: Array.from(participants[meetingId]),
     };
     return null;
   });

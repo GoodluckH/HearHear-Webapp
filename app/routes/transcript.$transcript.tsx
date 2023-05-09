@@ -2,6 +2,7 @@ import {
   json,
   type ActionFunction,
   type LoaderFunction,
+  Response,
 } from "@remix-run/node";
 import { useActionData, useLoaderData } from "@remix-run/react";
 import { useEffect, useState } from "react";
@@ -50,6 +51,8 @@ export const loader: LoaderFunction = async ({ request }) => {
 export const action: ActionFunction = async ({ request }) => {
   const match = request.url.split("/").pop()!.split("-");
 
+  const data = await request.formData();
+  const requestType = JSON.parse(data.get("requestType")?.toString() || "");
   const guildId = match[0];
   const channelId = match[1];
   const meetingId = match[2];
@@ -58,15 +61,28 @@ export const action: ActionFunction = async ({ request }) => {
     failureRedirect: "/login",
   });
 
-  const data = await downloadRecordingsAsZip(
-    guildId,
-    channelId,
-    meetingId,
-    process.env.S3_BUCKET_REGION!,
-    process.env.S3_BUCKET_NAME!
-  );
+  const res = await fetch(`https://worker.xipu-li5458.workers.dev/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      requestType,
+      guildId,
+      channelId,
+      meetingId,
+    }),
+  });
 
-  return json(data);
+  const json = await res.json();
+  console.log(json);
+
+  return new Response(JSON.stringify(json), {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 };
 
 export default function TranscriptPage() {
@@ -82,16 +98,6 @@ export default function TranscriptPage() {
   );
 
   const [downloadingRecordings, setDownloadingRecordings] = useState(false);
-
-  const data = useActionData<typeof action>();
-  const [recordingData, setRecordingData] = useState(null);
-
-  useEffect(() => {
-    if (data) {
-      setRecordingData(data);
-      console.log(data);
-    }
-  }, []);
 
   if (authorization === "Unauthorized") {
     return (
@@ -114,23 +120,19 @@ export default function TranscriptPage() {
     setDownloadingRecordings(true);
 
     let formData = new FormData();
-    formData.append("guildId", JSON.stringify(guildId));
-    formData.append("channelId", JSON.stringify(channelId));
-    formData.append("meetingId", JSON.stringify(meetingId));
+    formData.append("requestType", JSON.stringify("getTranscriptForMeeting"));
 
-    const res = await fetch(
-      `/transcript/${guildId}-${channelId}-${meetingId}`,
-      {
-        method: "POST",
-        body: formData,
-        headers: {
-          Accept: "application/json",
-        },
-      }
-    );
-
-    const text = await res.text();
-    console.log(text);
+    await fetch(`/transcript/${guildId}-${channelId}-${meetingId}`, {
+      method: "POST",
+      body: formData,
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
 
     // const body = await res.body?.getReader().read();
     // if (body === undefined || body.value === undefined) {

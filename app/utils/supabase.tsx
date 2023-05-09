@@ -40,14 +40,12 @@ export class MySupabaseClient {
     try {
       const userExist = await this.checkIfExists("users", "id", user.id);
       if (!userExist) {
-        await this.supabase.from("users").insert([
-          {
-            id: user.id,
-            display_name: user.displayName,
-            discriminator: user.discriminator,
-            credits: 500,
-          },
-        ]);
+        await this.supabase.from("users").insert({
+          id: user.id,
+          display_name: user.displayName,
+          discriminator: user.discriminator,
+          credits: 500,
+        });
       }
     } catch (e) {
       console.log(e);
@@ -232,8 +230,13 @@ export class MySupabaseClient {
         "id",
         meeting.guildId
       );
+
       if (!guildExist) {
-        await this.supabase.from("guilds").insert({ id: meeting.guildId });
+        try {
+          await this.supabase.from("guilds").insert({ id: meeting.guildId });
+        } catch (e) {
+          console.log("guild insert error:", e);
+        }
       }
 
       const channelExist = await this.checkIfExists(
@@ -241,10 +244,15 @@ export class MySupabaseClient {
         "id",
         meeting.channelId
       );
+
       if (!channelExist) {
-        await this.supabase
-          .from("channels")
-          .insert({ id: meeting.channelId, guild_id: meeting.guildId });
+        try {
+          await this.supabase
+            .from("channels")
+            .insert({ id: meeting.channelId, guild_id: meeting.guildId });
+        } catch (e) {
+          console.log("channel insert error:", e);
+        }
       }
 
       const meetingExist = await this.checkIfExists(
@@ -253,11 +261,15 @@ export class MySupabaseClient {
         meeting.id
       );
       if (!meetingExist) {
-        await this.supabase.from("meetings").insert({
-          id: meeting.id,
-          channel_id: meeting.channelId,
-          guild_id: meeting.guildId,
-        });
+        try {
+          await this.supabase.from("meetings").insert({
+            id: meeting.id,
+            channel_id: meeting.channelId,
+            guild_id: meeting.guildId,
+          });
+        } catch (e) {
+          console.log("meeting insert error:", e);
+        }
       }
 
       const { error } = await this.supabase.from("insights").insert({
@@ -265,6 +277,7 @@ export class MySupabaseClient {
         user_id: userId,
         insight_text: insghtText,
       });
+      console.log(error);
 
       if (error) {
         throw new Error(error.message);
@@ -279,18 +292,27 @@ export class MySupabaseClient {
     columnToCheck: string,
     value: string
   ) {
+    console.log("here checking if user exists");
+
     const { data, error } = await this.supabase
       .from(tableName)
       .select("*")
       .eq(columnToCheck, value);
 
+    console.log(data);
+
     if (error) {
+      console.log("error:", error);
+
       throw error;
     }
 
-    if (data && data.length > 0) {
+    if ((data !== null || data !== undefined) && data.length > 0) {
+      console.log("returning true");
+
       return true;
     }
+    console.log("returning false");
 
     return false;
   }

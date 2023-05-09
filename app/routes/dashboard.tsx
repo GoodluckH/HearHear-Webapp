@@ -16,6 +16,7 @@ import HowToUseBOT from "~/components/faq";
 import SelectedMeetingProvider from "~/context/selectedMeetingContext";
 import { ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
 import { Crisp } from "crisp-sdk-web";
+import { createSupabaseClient } from "~/utils/supabase";
 
 export interface BasicGuildInfo {
   id: string;
@@ -35,6 +36,9 @@ export let loader: LoaderFunction = async ({ request }) => {
     failureRedirect: "/new",
   });
   config();
+
+  const supabase = await createSupabaseClient(process.env.SUPABASE_KEY || "");
+  await supabase.loginUser(user);
 
   const hearHearBotId = process.env.DISCORD_CLIENT_ID || "";
   const hearHearBotToken = process.env.DISCORD_BOT_TOKEN || "";

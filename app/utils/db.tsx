@@ -32,6 +32,64 @@ export interface ProcessedTranscript {
   text: string;
 }
 
+export async function downloadRecordingsAsZip(
+  guildId: string,
+  channelId: string,
+  meetingId: string,
+  S3_BUCKET_REGION: string,
+  S3_BUCKET_NAME: string
+) {
+  const client = new S3Client({
+    region: S3_BUCKET_REGION,
+  });
+
+  const command = new ListObjectsV2Command({
+    Bucket: S3_BUCKET_NAME,
+    Prefix: guildId + "/" + channelId + "/" + meetingId,
+  });
+
+  try {
+    let isTruncated = true;
+    let contents: string[] = [];
+
+    while (isTruncated) {
+      const { Contents, IsTruncated, NextContinuationToken } =
+        await client.send(command);
+
+      if (Contents === undefined || IsTruncated === undefined) break;
+      Contents.map((c) => {
+        if (c.Key !== undefined) contents.push(c.Key);
+        return null;
+      });
+      isTruncated = IsTruncated;
+      command.input.ContinuationToken = NextContinuationToken;
+    }
+
+    const transcriptFilePaths = contents.filter((c) => c.endsWith(".ogg"));
+    const result: Array<{ filename: string; data: Uint8Array }> = [];
+    await Promise.all(
+      transcriptFilePaths.map(async (transcriptPath) => {
+        const byteArray = await getRecordingFileAsByteArray(
+          transcriptPath,
+          S3_BUCKET_REGION,
+          S3_BUCKET_NAME
+        );
+        // convert byteArray to blob
+        // const blob = new Blob([byteArray], { type: "audio/ogg" });
+        result.push({
+          filename: transcriptPath.split("/").pop()!,
+          data: byteArray,
+        });
+      })
+    );
+
+    return result;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
 export async function getProcessedTranscripts(
   guildId: string,
   channelId: string,

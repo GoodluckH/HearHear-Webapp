@@ -44,6 +44,7 @@ export const action: ActionFunction = async ({ request }) => {
     process.env.S3_BUCKET_REGION!,
     process.env.S3_BUCKET_NAME!
   );
+  console.log(processedTranscripts);
 
   // TODO: handle error
   if (processedTranscripts === null || processedTranscripts.length === 0) {
@@ -56,9 +57,14 @@ export const action: ActionFunction = async ({ request }) => {
       process.env.OPENAI_API_KEY || "",
       inputFields
     );
+    console.log(insightText);
 
     await supabase.uploadInsight(meeting!, user.id, insightText);
-    await supabase.addCredit(user, userCredits, -INSIGHT_GENERATION_COST);
+    await supabase.addCredit(
+      user,
+      Number(userCredits),
+      -Number(INSIGHT_GENERATION_COST)
+    );
     return insightText;
   } catch (error) {
     console.log(error);

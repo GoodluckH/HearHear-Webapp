@@ -1,13 +1,18 @@
-import { type LoaderFunction } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
-import { useState } from "react";
+import {
+  json,
+  type ActionFunction,
+  type LoaderFunction,
+} from "@remix-run/node";
+import { useActionData, useLoaderData } from "@remix-run/react";
+import { useEffect, useState } from "react";
 import type { Transcript } from "~/utils/db";
-import { getTranscripts } from "~/utils/db";
+import { downloadRecordingsAsZip, getTranscripts } from "~/utils/db";
 import { convertUNIXToString } from "~/utils/timestamp";
 import { SpeakerWaveIcon } from "@heroicons/react/24/solid";
 import { auth } from "~/auth.server";
+import { saveAs } from "file-saver";
 
-export let loader: LoaderFunction = async ({ request }) => {
+export const loader: LoaderFunction = async ({ request }) => {
   const match = request.url.split("/").pop()!.split("-");
 
   const guildId = match[0];
@@ -24,7 +29,7 @@ export let loader: LoaderFunction = async ({ request }) => {
     return "Unauthorized";
   }
 
-  return await getTranscripts(
+  const transcripts = await getTranscripts(
     guildId,
     channelId,
     meetingId,
@@ -33,14 +38,60 @@ export let loader: LoaderFunction = async ({ request }) => {
     process.env.AWS_ACCESS_KEY_ID!,
     process.env.AWS_SECRET_ACCESS_KEY!
   );
+
+  return {
+    transcripts,
+    guildId,
+    channelId,
+    meetingId,
+  };
+};
+
+export const action: ActionFunction = async ({ request }) => {
+  const match = request.url.split("/").pop()!.split("-");
+
+  const guildId = match[0];
+  const channelId = match[1];
+  const meetingId = match[2];
+
+  await auth.isAuthenticated(request, {
+    failureRedirect: "/login",
+  });
+
+  const data = await downloadRecordingsAsZip(
+    guildId,
+    channelId,
+    meetingId,
+    process.env.S3_BUCKET_REGION!,
+    process.env.S3_BUCKET_NAME!
+  );
+
+  return json(data);
 };
 
 export default function TranscriptPage() {
   const authorization = useLoaderData<string | null>();
-  const transcripts = useLoaderData<Transcript[] | null>();
+  const { transcripts, guildId, channelId, meetingId } = useLoaderData<{
+    transcripts: Array<Transcript>;
+    guildId: string;
+    channelId: string;
+    meetingId: string;
+  }>();
   const [currentTranscriptId, setCurrentTranscriptId] = useState<number | null>(
     null
   );
+
+  const [downloadingRecordings, setDownloadingRecordings] = useState(false);
+
+  const data = useActionData<typeof action>();
+  const [recordingData, setRecordingData] = useState(null);
+
+  useEffect(() => {
+    if (data) {
+      setRecordingData(data);
+      console.log(data);
+    }
+  }, []);
 
   if (authorization === "Unauthorized") {
     return (
@@ -59,33 +110,53 @@ export default function TranscriptPage() {
       </div>
     );
   }
+  async function handleDownload() {
+    setDownloadingRecordings(true);
 
-  // async function handleClick(transcript: Transcript, id: number) {
-  //   setCurrentTranscriptId(id);
-  //   console.log(transcript.audio);
-  //   const bytes = await Promise.resolve(transcript.audio);
-  //   const context = new window.AudioContext();
+    let formData = new FormData();
+    formData.append("guildId", JSON.stringify(guildId));
+    formData.append("channelId", JSON.stringify(channelId));
+    formData.append("meetingId", JSON.stringify(meetingId));
 
-  //   function playByteArray(bytes: Uint8Array | null) {
-  //     if (bytes === null) return;
-  //     var buffer = new Uint8Array(bytes.length);
-  //     buffer.set(new Uint8Array(bytes), 0);
+    const res = await fetch(
+      `/transcript/${guildId}-${channelId}-${meetingId}`,
+      {
+        method: "POST",
+        body: formData,
+        headers: {
+          Accept: "application/json",
+        },
+      }
+    );
 
-  //     const context = new AudioContext();
-  //     context.decodeAudioData(buffer.buffer, play);
-  //   }
+    const text = await res.text();
+    console.log(text);
 
-  //   function play(audioBuffer: any) {
-  //     var source = context.createBufferSource();
-  //     source.buffer = audioBuffer;
-  //     source.connect(context.destination);
-  //     source.start(0);
-  //   }
-  //   playByteArray(bytes);
-  // }
+    // const body = await res.body?.getReader().read();
+    // if (body === undefined || body.value === undefined) {
+    //   setDownloadingRecordings(false);
+    //   return;
+    // }
+
+    // const blob = new Blob([body.value], { type: "application/zip" });
+    // console.log(blob);
+
+    // saveAs(blob, `${meetingId}.zip`);
+
+    setDownloadingRecordings(false);
+  }
 
   return (
     <div className="mt-5 p-5 mx-auto">
+      <button
+        className={`bg-black hover:bg-gray-800 text-white font-bold py-4 px-4 rounded mt-5 border-white border-2 ${
+          downloadingRecordings && "opacity-50 cursor-not-allowed"
+        }`}
+        disabled={downloadingRecordings}
+        onClick={handleDownload}
+      >
+        {downloadingRecordings ? "Downloading" : "Download Recordings"}
+      </button>
       {transcripts
         .sort(
           (a, b) =>

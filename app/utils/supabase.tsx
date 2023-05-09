@@ -299,20 +299,14 @@ export class MySupabaseClient {
       .select("*")
       .eq(columnToCheck, value);
 
-    console.log(data);
-
     if (error) {
       console.log("error:", error);
-
       throw error;
     }
 
     if ((data !== null || data !== undefined) && data.length > 0) {
-      console.log("returning true");
-
       return true;
     }
-    console.log("returning false");
 
     return false;
   }

@@ -53,6 +53,13 @@ export class MySupabaseClient {
     }
   }
 
+  public async logErrorMessage(message: string, meetingId: string) {
+    await this.supabase.from("errors").insert({
+      message,
+      meeting_id: meetingId,
+    });
+  }
+
   /**
    * Batch create guilds on supabase if they do not exist.
    *

@@ -69,6 +69,7 @@ export const action: ActionFunction = async ({ request }) => {
     return insightText;
   } catch (error) {
     console.log(error);
+    await supabase.logErrorMessage(String(error), meeting.id);
   }
   return null;
 };

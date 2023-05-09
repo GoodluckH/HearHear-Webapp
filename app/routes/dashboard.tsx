@@ -32,7 +32,7 @@ export interface DashboardProps {
 
 export let loader: LoaderFunction = async ({ request }) => {
   const user = await auth.isAuthenticated(request, {
-    failureRedirect: "/login",
+    failureRedirect: "/new",
   });
   config();
 

@@ -148,7 +148,7 @@ export default function TranscriptPage() {
 
   return (
     <div className="mt-5 p-5 mx-auto">
-      <button
+      {/* <button
         className={`bg-black hover:bg-gray-800 text-white font-bold py-4 px-4 rounded mt-5 border-white border-2 ${
           downloadingRecordings && "opacity-50 cursor-not-allowed"
         }`}
@@ -156,7 +156,7 @@ export default function TranscriptPage() {
         onClick={handleDownload}
       >
         {downloadingRecordings ? "Downloading" : "Download Recordings"}
-      </button>
+      </button> */}
       {transcripts
         .sort(
           (a, b) =>

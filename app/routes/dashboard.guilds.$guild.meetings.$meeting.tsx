@@ -6,7 +6,7 @@ import {
 import { type Meeting } from "~/utils/db";
 import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Link, useActionData, useLoaderData } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 import { GenerateInsight } from "~/components/insight/transactionModal";
 import type { DiscordUser } from "~/auth.server";
 import { DocumentTextIcon } from "@heroicons/react/24/outline";
@@ -88,7 +88,7 @@ export default function MeetingPage() {
   };
 
   useEffect(() => {
-    const channelUpdate = supabaseClient
+    const channel = supabaseClient
       .channel(`${user!.id}-insights-update`)
       .on(
         "postgres_changes",
@@ -103,10 +103,6 @@ export default function MeetingPage() {
           setPendingJob(false);
         }
       )
-      .subscribe();
-
-    const channelInsert = supabaseClient
-      .channel(`${user!.id}-insights-insert`)
       .on(
         "postgres_changes",
         {
@@ -119,18 +115,23 @@ export default function MeetingPage() {
           setPendingJob(true);
         }
       )
-      .subscribe();
+      .subscribe((message) => {
+        console.log(message);
+      });
+
+    // const channelUpdate =
+
+    // const channelInsert = supabaseClient
+    //   .channel(`${user!.id}-insights-insert`)
+
+    //   .subscribe();
 
     return () => {
-      if (channelUpdate.state === "joined") {
-        supabaseClient.removeChannel(channelUpdate);
-      }
-      if (channelInsert.state === "joined") {
-        supabaseClient.removeChannel(channelInsert);
-      }
+      supabaseClient.removeChannel(channel);
     };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabaseClient]);
+  }, []);
 
   useInsightArrayEffect(() => {
     fetchInsights();

@@ -1,30 +1,17 @@
-import strftime from "strftime";
-import type { ProcessedTranscript } from ".";
-
 export async function generateInsightFromTranscript(
-  processedTranscripts: ProcessedTranscript[],
-  key: string,
-  sections: string[],
-  supabase: any,
-  meetingId: string
+  processedTranscripts,
+  key,
+  sections
 ) {
-  await supabase.logErrorMessage("sections" + sections, meetingId);
-
-  await supabase.logErrorMessage("start generating insight", meetingId);
-
-  // const processedTranscripts = processTranscripts(transcripts);
   processedTranscripts
     .sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
     .forEach((transcript) => {
-      transcript.timestamp = convertUNIXToString(transcript.timestamp);
-      transcript.username = transcript.username.split("_")[0];
+      delete transcript.timestamp;
+      transcript.username = transcript.username.slice(0, -5);
     });
-  await supabase.logErrorMessage("sorted transcripts", meetingId);
 
   try {
-    // 4 characters -> 1 token
-
-    const chunkedTranscripts: Array<ProcessedTranscript[]> = [[]];
+    const chunkedTranscripts = [[]];
     let i = 0;
     // 1000 tokens per request
 
@@ -44,8 +31,6 @@ export async function generateInsightFromTranscript(
       }
     }
 
-    await supabase.logErrorMessage("ready to call gpt", meetingId);
-    await supabase.logErrorMessage("sections", sections);
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -66,15 +51,11 @@ export async function generateInsightFromTranscript(
       }),
     });
 
-    let json: any = await res.json();
+    console.log("res", res);
+    let json = await res.json();
+    console.log("json", json);
 
-    await supabase.logErrorMessage(
-      "first completion done" + JSON.stringify(json),
-      meetingId
-    );
-
-    let styledText = json.choices[0].message!.content;
-    console.log(chunkedTranscripts.length);
+    let styledText = json.choices[0].message.content;
 
     if (chunkedTranscripts.length > 1) {
       for (let i = 1; i < chunkedTranscripts.length; i += 1) {
@@ -103,8 +84,8 @@ export async function generateInsightFromTranscript(
         });
         console.log("res", res);
 
-        const json: any = await res.json();
-        styledText = json.choices[0].message!.content;
+        const json = await res.json();
+        styledText = json.choices[0].message.content;
         console.log("styledText", styledText);
       }
     }
@@ -112,6 +93,7 @@ export async function generateInsightFromTranscript(
 
     return styledText;
   } catch (err) {
+    console.log("error generating insight:", err);
     throw err;
   }
 }
@@ -122,7 +104,7 @@ const BASE_PROMPT =
 const CONTINUE_PROMPT =
   "Given the generated insight and additional transcripts, please modify, refine the content of each section of the generated insight accordingly. You must output the new insight with the same styling and headers. DO NOT MAKE UP ANYTHING ELSE \n\n";
 
-function buildPrompt(sections: string[]) {
+function buildPrompt(sections) {
   let prompt = BASE_PROMPT;
   sections.forEach((section) => {
     prompt += section + "\n\n";
@@ -133,10 +115,7 @@ function buildPrompt(sections: string[]) {
   return prompt;
 }
 
-function buildContinueInsightPrompt(
-  generatedInsight: string,
-  transcripts: ProcessedTranscript[]
-) {
+function buildContinueInsightPrompt(generatedInsight, transcripts) {
   let prompt = CONTINUE_PROMPT;
   prompt += "\n\n\n here's the existing insight\n\n";
   prompt += generatedInsight;
@@ -145,8 +124,4 @@ function buildContinueInsightPrompt(
   prompt += JSON.stringify(transcripts);
 
   return prompt;
-}
-export function convertUNIXToString(unixTimestamp: string, format?: string) {
-  const date_obj = new Date(Number(unixTimestamp));
-  return strftime(format || "%B %d, %Y %I:%M %p", date_obj);
 }

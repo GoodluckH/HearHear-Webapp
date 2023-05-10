@@ -1,0 +1,27 @@
+service: lambda
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  environment:
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+    SUPABASE_KEY: ${env:SUPABASE_KEY}
+useDotenv: true
+
+functions:
+  hello:
+    handler: index.handler
+    events:
+      - http:
+          path: /
+          method: get
+  insight:
+    handler: insight.generate
+    timeout: 900
+    events:
+      - http:
+          path: /insight
+          method: post
+plugins:
+  - serverless-plugin-typescript

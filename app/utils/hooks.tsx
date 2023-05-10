@@ -66,20 +66,11 @@ function insightArrayEqual(
 }
 export const useInsightArrayEffect = (
   cb: () => MaybeCleanUpFn,
-  deps: [Insight[], string, string | undefined | null]
+  deps: [Insight[], string]
 ) => {
-  const ref = useRef<[Insight[], string, string | undefined | null]>(deps);
+  const ref = useRef<[Insight[], string]>(deps);
 
-  if (
-    !insightArrayEqual(
-      deps[0],
-      ref.current[0],
-      deps[1],
-      ref.current[1],
-      deps[2],
-      ref.current[2]
-    )
-  ) {
+  if (!insightArrayEqual(deps[0], ref.current[0], deps[1], ref.current[1])) {
     ref.current = deps;
   }
 

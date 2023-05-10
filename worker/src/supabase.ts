@@ -185,6 +185,10 @@ export class MySupabaseClient {
 
     if (error) {
       console.log("error updating insight status:", error);
+      await this.logErrorMessage(
+        "error updating insight status: " + error,
+        meetingId
+      );
       throw new Error(error.message);
     }
   }

@@ -30,7 +30,6 @@ export const action: ActionFunction = async ({ request }) => {
   const supabase = createSupabaseClient(process.env.SUPABASE_KEY!);
   const data = await request.formData();
 
-  const requestType = JSON.parse(data.get("requestType")?.toString() || "");
   const inputFields = JSON.parse(data.get("inputFields")?.toString() || "[]");
   const guildId = JSON.parse(data.get("guildId")?.toString() || "{}");
   const channelId = JSON.parse(data.get("channelId")?.toString() || "{}");
@@ -45,11 +44,12 @@ export const action: ActionFunction = async ({ request }) => {
     process.env.S3_BUCKET_NAME!
   );
 
-  fetch("https://worker.xipu-li5458.workers.dev", {
+  // guildId, channelId, meetingId, sections, userId
+
+  fetch("https://hm138jk1rb.execute-api.us-east-1.amazonaws.com/dev/insight", {
     method: "POST",
     body: JSON.stringify({
-      requestType,
-      inputFields,
+      sections: inputFields,
       guildId,
       channelId,
       meetingId,
@@ -62,7 +62,6 @@ export const action: ActionFunction = async ({ request }) => {
 
 export default function MeetingPage() {
   let { supabaseKey } = useLoaderData<typeof loader>();
-  const action = useActionData<string | null>();
 
   const meetings =
     useRouteData<Meeting[]>("routes/dashboard.guilds.$guild") || [];
@@ -135,7 +134,7 @@ export default function MeetingPage() {
 
   useInsightArrayEffect(() => {
     fetchInsights();
-  }, [insights, thisMeeting!.id, action]);
+  }, [insights, thisMeeting!.id]);
 
   return (
     <div className="p-10 min-h-screen whitespace-pre-line  max-w-4xl">

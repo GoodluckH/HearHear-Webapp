@@ -37,8 +37,6 @@ export const action: ActionFunction = async ({ request }) => {
   const meetingId = JSON.parse(data.get("meetingId")?.toString() || "{}");
   const userId = JSON.parse(data.get("userId")?.toString() || "{}");
 
-  console.log(requestType, inputFields, guildId, channelId, meetingId, userId);
-
   await supabase.saveProcessedTranscripts(
     guildId,
     channelId,
@@ -46,8 +44,6 @@ export const action: ActionFunction = async ({ request }) => {
     process.env.S3_BUCKET_REGION!,
     process.env.S3_BUCKET_NAME!
   );
-
-  console.log("saved processed transcripts");
 
   fetch("https://worker.xipu-li5458.workers.dev", {
     method: "POST",
@@ -93,8 +89,8 @@ export default function MeetingPage() {
   };
 
   useEffect(() => {
-    const channel = supabaseClient
-      .channel(`insights`)
+    const channelUpdate = supabaseClient
+      .channel(`${user!.id}-insights-update`)
       .on(
         "postgres_changes",
         {
@@ -108,6 +104,10 @@ export default function MeetingPage() {
           setPendingJob(false);
         }
       )
+      .subscribe();
+
+    const channelInsert = supabaseClient
+      .channel(`${user!.id}-insights-insert`)
       .on(
         "postgres_changes",
         {
@@ -123,7 +123,12 @@ export default function MeetingPage() {
       .subscribe();
 
     return () => {
-      if (channel.state === "joined") supabaseClient.removeChannel(channel);
+      if (channelUpdate.state === "joined") {
+        supabaseClient.removeChannel(channelUpdate);
+      }
+      if (channelInsert.state === "joined") {
+        supabaseClient.removeChannel(channelInsert);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabaseClient]);
@@ -161,7 +166,7 @@ export default function MeetingPage() {
 
         <div className="border-b-2 border-gray-200 "></div>
         <h1 className="text-xl font-bold mt-10">Insights</h1>
-        <p className="text-gray-500 text-sm mt-2">
+        <div className="text-gray-500 text-sm mt-2">
           {pendingJob && (
             <ul>
               <li>✔️ processed all transcripts</li>
@@ -172,7 +177,7 @@ export default function MeetingPage() {
               </li>
             </ul>
           )}
-        </p>
+        </div>
         {loadingInsights ? (
           <div className="mt-5">Loading...</div>
         ) : (

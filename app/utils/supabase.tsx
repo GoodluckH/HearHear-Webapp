@@ -147,6 +147,41 @@ export class MySupabaseClient {
     S3_BUCKET_REGION: string,
     S3_BUCKET_NAME: string
   ) {
+    const guildExist = await this.checkIfExists("guilds", "id", guildId);
+
+    if (!guildExist) {
+      try {
+        await this.supabase.from("guilds").insert({ id: guildId });
+      } catch (e) {
+        console.log("guild insert error:", e);
+      }
+    }
+
+    const channelExist = await this.checkIfExists("channels", "id", channelId);
+
+    if (!channelExist) {
+      try {
+        await this.supabase
+          .from("channels")
+          .insert({ id: channelId, guild_id: guildId });
+      } catch (e) {
+        console.log("channel insert error:", e);
+      }
+    }
+
+    const meetingExist = await this.checkIfExists("meetings", "id", meetingId);
+    if (!meetingExist) {
+      try {
+        await this.supabase.from("meetings").insert({
+          id: meetingId,
+          channel_id: channelId,
+          guild_id: guildId,
+        });
+      } catch (e) {
+        console.log("meeting insert error:", e);
+      }
+    }
+
     const exist = await this.checkIfExists(
       "transcripts",
       "meeting_id",

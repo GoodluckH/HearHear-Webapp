@@ -98,7 +98,9 @@ export const GenerateInsight: React.FC<prop> = ({
         method: "POST",
         body: formData,
       }
-    );
+    ).catch((error) => {
+      console.log(error);
+    });
     setLoading(false);
     // await fetchInsights();
     setOpen(false);

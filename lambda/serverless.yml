@@ -4,6 +4,7 @@ frameworkVersion: "3"
 provider:
   name: aws
   runtime: nodejs18.x
+  region: us-west-2
   environment:
     OPENAI_API_KEY: ${env:OPENAI_API_KEY}
     SUPABASE_KEY: ${env:SUPABASE_KEY}

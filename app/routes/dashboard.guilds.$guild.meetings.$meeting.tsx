@@ -76,7 +76,7 @@ export default function MeetingPage() {
   const [loadingInsights, setLoadingInsights] = useState<boolean>(false);
   const [pendingJob, setPendingJob] = useState<boolean>(false);
 
-  const supabase = createSupabaseClient(supabaseKey!);
+  const [supabase] = useState(() => createSupabaseClient(supabaseKey!));
   const supabaseClient = supabase.getClient();
 
   const fetchInsights = async () => {

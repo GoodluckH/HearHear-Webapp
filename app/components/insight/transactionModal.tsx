@@ -108,8 +108,9 @@ export const GenerateInsight: React.FC<prop> = ({
   return (
     <>
       <button
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold p-1 rounded-full"
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold p-1 rounded-full disabled:bg-gray-400"
         onClick={() => setOpen(true)}
+        disabled
       >
         <PlusIcon className="text-white stroke-2 h-5 w-5" />
       </button>

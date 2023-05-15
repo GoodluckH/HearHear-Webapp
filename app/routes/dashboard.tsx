@@ -80,6 +80,14 @@ export default function DashboardLayout() {
 
   return (
     <>
+      <div className="bg-yellow-700 text-white p-2 text-center">
+        <p>
+          <span className="font-bold">Status:</span> We are currently
+          experiencing issues with AWS. You can still access transcripts but
+          won't be able to generate insights until the issue is resolved.
+        </p>
+        <p>Thank you for your patience. </p>
+      </div>
       <div className="flex bg-gray-50 overflow-hidden min-h-screen">
         <nav className="w-64 bg-slate-100 border-r border-gray-200 h-screen flex flex-col">
           <div className="px-6 pt-8">

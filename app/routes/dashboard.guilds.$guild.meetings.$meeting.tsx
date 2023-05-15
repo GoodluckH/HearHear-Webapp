@@ -46,7 +46,7 @@ export const action: ActionFunction = async ({ request }) => {
 
   // guildId, channelId, meetingId, sections, userId
 
-  fetch("https://hm138jk1rb.execute-api.us-east-1.amazonaws.com/dev/insight", {
+  fetch("https://url770sa6k.execute-api.us-west-2.amazonaws.com/dev/insight", {
     method: "POST",
     body: JSON.stringify({
       sections: inputFields,

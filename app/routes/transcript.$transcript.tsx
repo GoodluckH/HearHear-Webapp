@@ -97,8 +97,8 @@ export default function TranscriptPage() {
     null
   );
 
-  const [downloadingRecordings, setDownloadingRecordings] = useState(false);
-
+  // const [downloadingRecordings, setDownloadingRecordings] = useState(false);
+  const [currentAudio, setCurrentAudio] = useState("");
   if (authorization === "Unauthorized") {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
@@ -116,37 +116,42 @@ export default function TranscriptPage() {
       </div>
     );
   }
-  async function handleDownload() {
-    setDownloadingRecordings(true);
 
-    let formData = new FormData();
-    formData.append("requestType", JSON.stringify("getTranscriptForMeeting"));
-
-    await fetch(`/transcript/${guildId}-${channelId}-${meetingId}`, {
-      method: "POST",
-      body: formData,
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-
-    // const body = await res.body?.getReader().read();
-    // if (body === undefined || body.value === undefined) {
-    //   setDownloadingRecordings(false);
-    //   return;
-    // }
-
-    // const blob = new Blob([body.value], { type: "application/zip" });
-    // console.log(blob);
-
-    // saveAs(blob, `${meetingId}.zip`);
-
-    setDownloadingRecordings(false);
+  function handleClick(transcript: Transcript, id: number) {
+    setCurrentAudio(transcript.audio_link);
   }
+
+  // async function handleDownload() {
+  //   setDownloadingRecordings(true);
+
+  //   let formData = new FormData();
+  //   formData.append("requestType", JSON.stringify("getTranscriptForMeeting"));
+
+  //   await fetch(`/transcript/${guildId}-${channelId}-${meetingId}`, {
+  //     method: "POST",
+  //     body: formData,
+  //   })
+  //     .then((res) => res.json())
+  //     .then((data) => {
+  //       console.log(data);
+  //     })
+  //     .catch((err) => {
+  //       console.log(err);
+  //     });
+
+  //   // const body = await res.body?.getReader().read();
+  //   // if (body === undefined || body.value === undefined) {
+  //   //   setDownloadingRecordings(false);
+  //   //   return;
+  //   // }
+
+  //   // const blob = new Blob([body.value], { type: "application/zip" });
+  //   // console.log(blob);
+
+  //   // saveAs(blob, `${meetingId}.zip`);
+
+  //   setDownloadingRecordings(false);
+  // }
 
   return (
     <div className="mt-5 p-5 mx-auto">
@@ -167,7 +172,7 @@ export default function TranscriptPage() {
         .map((transcript, id) => (
           <div key={id} className="border-b py-4">
             {/* Render audio player */}
-            {/* {currentAudio === transcript.audio_link && (
+            {currentAudio === transcript.audio_link && (
               <audio
                 className="hidden"
                 autoPlay
@@ -175,7 +180,7 @@ export default function TranscriptPage() {
                 onEnded={() => setCurrentAudio("")}
                 src={transcript.audio_link}
               ></audio>
-            )} */}
+            )}
             <h2 className="text-xl font-semibold mb-0 flex items-center">
               {transcript.filename.split("-")[1].slice(0, -4)} -{" "}
               {convertUNIXToString(
@@ -190,9 +195,9 @@ export default function TranscriptPage() {
             </h2>
             {/* Add onClick event handler to transcript text */}
             <div
-              // className="p-4 mb-5 text-gray-600 text-lg cursor-pointer hover:border-gray-200 hover:border hover:rounded-lg hover:shadow-lg"
-              className="p-4 mb-5 text-gray-600 text-lg"
-              // onClick={() => handleClick(transcript, id)}
+              className="p-4 mb-5 text-gray-600 text-lg cursor-pointer hover:border-gray-200 hover:border hover:rounded-lg hover:shadow-lg"
+              // className="p-4 mb-5 text-gray-600 text-lg"
+              onClick={() => handleClick(transcript, id)}
             >
               {transcript.text}
             </div>

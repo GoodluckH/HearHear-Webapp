@@ -22,8 +22,9 @@ export interface Meeting {
 
 export interface Transcript {
   filename: string;
-  audio: Promise<Uint8Array> | null;
+  // audio: Promise<Uint8Array> | null;
   text: string;
+  audio_link: string;
 }
 
 export interface ProcessedTranscript {
@@ -31,6 +32,8 @@ export interface ProcessedTranscript {
   timestamp: string;
   text: string;
 }
+
+export const CLOUDFRONT_URL = "https://dv46dfbzh6luw.cloudfront.net";
 
 export async function downloadRecordingsAsZip(
   guildId: string,
@@ -136,8 +139,10 @@ export async function getProcessedTranscripts(
 
         transcripts.push({
           filename: transcriptPath.split("/").pop()!,
-          audio: null,
+          // audio: null,
           text,
+          audio_link:
+            CLOUDFRONT_URL + "/" + transcriptPath.replace(".txt", ".ogg"),
         });
       })
     );
@@ -200,29 +205,13 @@ export async function getTranscripts(
 
         transcripts.push({
           filename: transcriptPath.split("/").pop()!,
-          audio: null,
+          // audio: null,
           text,
+          audio_link:
+            CLOUDFRONT_URL + "/" + transcriptPath.replace(".txt", ".ogg"),
         });
       })
     );
-
-    transcripts.map((t) => {
-      const audioFilePath =
-        guildId +
-        "/" +
-        channelId +
-        "/" +
-        meetingId +
-        "/" +
-        t.filename.replace(".txt", ".ogg");
-      t.audio = getRecordingFileAsByteArray(
-        audioFilePath,
-        S3_BUCKET_REGION,
-        S3_BUCKET_NAME
-      );
-
-      return null;
-    });
 
     return transcripts;
   } catch (err) {
